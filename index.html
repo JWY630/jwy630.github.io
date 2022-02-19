@@ -88,9 +88,9 @@
       
         <h1 id="小程序包"><a href="#小程序包" class="headerlink" title="小程序包"></a>小程序包</h1><h2 id="wxapkg-包获取"><a href="#wxapkg-包获取" class="headerlink" title="wxapkg 包获取"></a>wxapkg 包获取</h2><p>安卓设备中存储在 /data/data/com.tencent.mm/MicroMsg/{UserIdHash}/appbrand/pkg/ 下 *.wxapkg</p>
 <h2 id="wxapkg-包处理"><a href="#wxapkg-包处理" class="headerlink" title="wxapkg 包处理"></a>wxapkg 包处理</h2><p>二进制文件，没有对内容加密，没有对文件压缩，是各个数据段的拼接，比较好还原，各段如下图。头部含一些字段，比较重要的有数据段长度、文件数目。索引段表示各文件的文件名长度、文件名、文件在数据段的未知、文件大小等。数据段则是每个文件的文件数据。</p>
-<p><img src="../pics/test/image.png" alt="avatar"></p>
+<p><img src="/pics/test/image.png" alt="avatar"></p>
 <h1 id="小程序代码结构"><a href="#小程序代码结构" class="headerlink" title="小程序代码结构"></a>小程序代码结构</h1><h2 id="框架"><a href="#框架" class="headerlink" title="框架"></a>框架</h2><p>小程序的运行环境分成渲染层和逻辑层，其中 WXML 模板和 WXSS 样式工作在渲染层，JS 脚本工作在逻辑层。<br>框架的核心是一个响应的数据绑定系统，可以让数据与视图非常简单地保持同步。当做数据修改的时候，只需要在逻辑层修改数据，视图层就会做相应的更新。</p>
-<p><img src="../pics/test/framework.png" alt="avatar"></p>
+<p><img src="/pics/test/framework.png" alt="avatar"></p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- This is our View --&gt;</span><br><span class="line">&lt;view&gt; Hello &#123;&#123;name&#125;&#125;! &lt;/view&gt;</span><br><span class="line">&lt;button bindtap=&quot;changeName&quot;&gt; Click me! &lt;/button&gt;</span><br></pre></td></tr></table></figure>
 
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">// This is our App Service.</span><br><span class="line">// This is our data.</span><br><span class="line">var helloData = &#123;</span><br><span class="line">  name: &#x27;Weixin&#x27;</span><br><span class="line">&#125;</span><br><span class="line">// Register a Page.</span><br><span class="line">Page(&#123;</span><br><span class="line">  data: helloData,</span><br><span class="line">  changeName: function(e) &#123;</span><br><span class="line">    // sent data change to view</span><br><span class="line">    this.setData(&#123;</span><br><span class="line">      name: &#x27;MINA&#x27;</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
@@ -170,7 +170,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2022/02/19/test/" data-id="ckztiioo60001rowx44ouajcj" class="article-share-link">Share</a>
+      <a data-url="http://example.com/2022/02/19/test/" data-id="ckztik27f0001nkwx9mom147y" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="tag">小程序</a></li></ul>
@@ -221,7 +221,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2022/02/19/hello-world/" data-id="ckztiiony0000rowx3d2cgkpj" class="article-share-link">Share</a>
+      <a data-url="http://example.com/2022/02/19/hello-world/" data-id="ckztik27b0000nkwx224a5spb" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/hexo/" rel="tag">hexo</a></li></ul>
