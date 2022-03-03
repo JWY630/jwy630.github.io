@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>【技术】【小程序】微信小程序解包工具 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="接上次小程序的基础知识，分享一个小程序解包工具wxunpacker（base64 解码跳转新链接）。 小程序包结构上篇文章提到过，小程序的 wxapkg 文件实际上是个二进制文件，没有加密等复杂操作。其结构可以分为三个部分，header、index 及 data。 Header 8 位：firstMark，总为 190（0xbe） 32 位：未知含义，目前来看总为 0 32 位：Index 段长度">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【技术】【小程序】微信小程序解包工具">
+<meta property="og:url" content="http://example.com/2022/03/03/wechat-mini-program-unpack/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="接上次小程序的基础知识，分享一个小程序解包工具wxunpacker（base64 解码跳转新链接）。 小程序包结构上篇文章提到过，小程序的 wxapkg 文件实际上是个二进制文件，没有加密等复杂操作。其结构可以分为三个部分，header、index 及 data。 Header 8 位：firstMark，总为 190（0xbe） 32 位：未知含义，目前来看总为 0 32 位：Index 段长度">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-03-03T10:28:18.000Z">
+<meta property="article:modified_time" content="2022-03-03T11:05:44.350Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="小程序">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 5.4.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-wechat-mini-program-unpack" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2022/03/03/wechat-mini-program-unpack/" class="article-date">
+  <time datetime="2022-03-03T10:28:18.000Z" itemprop="datePublished">2022-03-03</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      【技术】【小程序】微信小程序解包工具
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>接上次小程序的基础知识，分享一个小程序解包工具<a target="_blank" rel="noopener" href="https://github.com/xuedingmiaojun/wxappUnpacker">wxunpacker</a>（base64 解码跳转新链接）。</p>
+<h1 id="小程序包结构"><a href="#小程序包结构" class="headerlink" title="小程序包结构"></a>小程序包结构</h1><p><a target="_blank" rel="noopener" href="https://jwy630.github.io/2022/02/19/test/">上篇文章</a>提到过，小程序的 wxapkg 文件实际上是个二进制文件，没有加密等复杂操作。<br>其结构可以分为三个部分，header、index 及 data。</p>
+<h2 id="Header"><a href="#Header" class="headerlink" title="Header"></a>Header</h2><ul>
+<li>8 位：firstMark，总为 190（0xbe）</li>
+<li>32 位：未知含义，目前来看总为 0</li>
+<li>32 位：Index 段长度</li>
+<li>32 位：Data 段长度</li>
+<li>8 位：lastMark，总为 237（0xed）</li>
+<li>32 位：文件数目，<strong>fileCount</strong></li>
+</ul>
+<h2 id="Index"><a href="#Index" class="headerlink" title="Index"></a>Index</h2><p>单个文件的字段如下，一个 wxapkg 中有 <strong>fileCount</strong> 个这样的字段</p>
+<ul>
+<li>32 位：文件名长度 nameLength</li>
+<li>长度为 nameLength 的文件名</li>
+<li>32 位：offset，文件在数据段中的位置</li>
+<li>32 位：文件大小</li>
+</ul>
+<h2 id="Data"><a href="#Data" class="headerlink" title="Data"></a>Data</h2><p>所有的文件数据，上述 index 中的 offset 从中索引</p>
+<h1 id="解包"><a href="#解包" class="headerlink" title="解包"></a>解包</h1><h2 id="环境与工具"><a href="#环境与工具" class="headerlink" title="环境与工具"></a>环境与工具</h2><ol>
+<li>node</li>
+<li>前面提到的微信 unpacker</li>
+</ol>
+<h2 id="操作"><a href="#操作" class="headerlink" title="操作"></a>操作</h2><ol>
+<li><p>区分主包与子包<br>子包解包后得到的文件内容与主包差别较大，缺少几个主要文件：app-service.js、app.json、app-config.json 等，是关于整个包的配置。因此如果直接使用解主包的指令解子包，工具将报错（虽然目录下的内容仍然可以获得）。</p>
+</li>
+<li><p>解主包<br>{main_package.wxapkg} 直接执行下面指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">node wuWxapkg.js main_package.wxapkg</span><br></pre></td></tr></table></figure></li>
+<li><p>解子包<br>{sub_package.wxapkg} 执行下面指令，其中 -s 用于指示主包的位置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">node wuWxapkg.js sub_package.wxapkg -s=main_package</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>解包后就可以得到源代码，解包后的文件结构及不同文件作用见<a target="_blank" rel="noopener" href="https://jwy630.github.io/2022/02/19/test/">前文</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2022/03/03/wechat-mini-program-unpack/" data-id="cl0avti9f0000x0wx2r2s7eon" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="tag">小程序</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2022/02/24/summary-flash-boy-2/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">【paper summary】 Flash Boys 2.0:Frontrunning, Transaction Reordering, and Consensus Instability in Decentralized Exchanges</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/" rel="tag">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/paperSummary/" rel="tag">paperSummary</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="tag">小程序</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/paperSummary/" style="font-size: 10px;">paperSummary</a> <a href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" style="font-size: 20px;">小程序</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/03/">March 2022</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/02/">February 2022</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2022/03/03/wechat-mini-program-unpack/">【技术】【小程序】微信小程序解包工具</a>
+          </li>
+        
+          <li>
+            <a href="/2022/02/24/summary-flash-boy-2/">【paper summary】 Flash Boys 2.0:Frontrunning, Transaction Reordering, and Consensus Instability in Decentralized Exchanges</a>
+          </li>
+        
+          <li>
+            <a href="/2022/02/19/test/">【知识】【小程序】微信小程序代码分析</a>
+          </li>
+        
+          <li>
+            <a href="/2022/02/19/hello-world/">【技术】【其他】Hexo 教程</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2022 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
