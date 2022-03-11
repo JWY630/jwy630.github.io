@@ -92,17 +92,17 @@
 <li>publish：CCS 20</li>
 </ul>
 <h2 id="文章内容"><a href="#文章内容" class="headerlink" title="文章内容"></a>文章内容</h2><ol>
-<li><p>研究什么？<br>作者分析小程序框架安全，提出三类小程序生态系统中，由于资源管理不完善引起的 __三类漏洞__。对三类漏洞进行 __阐述、攻击验证、提出检测方法及缓解措施__。</p>
+<li><p>研究什么？<br>作者分析小程序框架安全，提出三类小程序生态系统中，由于资源管理不完善引起的<strong>三类漏洞</strong>。对三类漏洞进行<strong>阐述、攻击验证、提出检测方法及缓解措施</strong>。</p>
 </li>
 <li><p>作者贡献？</p>
 </li>
 </ol>
 <ul>
-<li>提出现有 app-in-app 生态系统中资源管理方式存在的安全性问题。提出三种攻击方式，并简单验证。__个人认为三种攻击影响确实蛮大的__，后面具体介绍。</li>
-<li>对自己发现的问题进行一个 measurement study，其中借助了自己开发的自动化检测工具，叫 apinat。个人认为这个工具贡献技术上贡献不太强，主要为检测两类漏洞辅助。（__为什么是检测两类漏洞，不是检测三类漏洞，因为第三个漏洞确实不需要特别检测，后续具体介绍。__）</li>
+<li>提出现有 app-in-app 生态系统中资源管理方式存在的安全性问题。提出三种攻击方式，并简单验证。<strong>个人认为三种攻击影响确实蛮大的</strong>，后面具体介绍。</li>
+<li>对自己发现的问题进行一个 measurement study，其中借助了自己开发的自动化检测工具，叫 apinat。个人认为这个工具贡献技术上贡献不太强，主要为检测两类漏洞辅助。（<strong>为什么是检测两类漏洞，不是检测三类漏洞，因为第三个漏洞确实不需要特别检测，后续具体介绍。</strong>）</li>
 <li>总结一些经验教训与问题相应的缓解措施.</li>
 </ul>
-<h1 id="三类漏洞"><a href="#三类漏洞" class="headerlink" title="三类漏洞"></a>三类漏洞</h1><h2 id="敏感信息泄露"><a href="#敏感信息泄露" class="headerlink" title="敏感信息泄露"></a>敏感信息泄露</h2><h3 id="描述"><a href="#描述" class="headerlink" title="描述"></a>描述</h3><p><strong>本质就是不一致问题。</strong><br>小程序宿主 APP 对小程序 API 有权限管理，系统对系统 API 有权限管理，同时小程序 API 本质还是在 APP Native 层开发，必然涉及到一些系统 API。<br>因此小程序 API 实际由一批系统 API 实现，因此可以通过这些系统 API 映射到系统权限，即可以通过映射获取 __小程序 API 对应哪些系统权限__，同时平台又对小程序开发者要求 __小程序 API 应当与何权限映射__，此时存在两种映射关系，这两种映射的 <strong>不一致</strong> 将导致敏感资源泄露的问题。<br>如果一个小程序 API 没有被小程序平台严格约束，但底层实现的代码调用了涉及敏感资源的 API，则该小程序 API 将造成敏感资源泄露。作者将之命名为 Encapsulated API。</p>
+<h1 id="三类漏洞"><a href="#三类漏洞" class="headerlink" title="三类漏洞"></a>三类漏洞</h1><h2 id="敏感信息泄露"><a href="#敏感信息泄露" class="headerlink" title="敏感信息泄露"></a>敏感信息泄露</h2><h3 id="描述"><a href="#描述" class="headerlink" title="描述"></a>描述</h3><p><strong>本质就是不一致问题。</strong><br>小程序宿主 APP 对小程序 API 有权限管理，系统对系统 API 有权限管理，同时小程序 API 本质还是在 APP Native 层开发，必然涉及到一些系统 API。<br>因此小程序 API 实际由一批系统 API 实现，因此可以通过这些系统 API 映射到系统权限，即可以通过映射获取<strong>小程序 API 对应哪些系统权限</strong>，同时平台又对小程序开发者要求<strong>小程序 API 应当与何权限映射</strong>，此时存在两种映射关系，这两种映射的<strong>不一致</strong>将导致敏感资源泄露的问题。<br>如果一个小程序 API 没有被小程序平台严格约束，但底层实现的代码调用了涉及敏感资源的 API，则该小程序 API 将造成敏感资源泄露。作者将之命名为 Encapsulated API。</p>
 <h3 id="检测方法"><a href="#检测方法" class="headerlink" title="检测方法"></a>检测方法</h3><ol>
 <li>关注没有被小程序平台列为涉及敏感资源的小程序 API</li>
 <li>构造（小程序 API - 系统 APIs - 系统权限）这样一种映射</li>
@@ -110,17 +110,17 @@
 </ol>
 <p>Q：作者如何构造这样一种映射？<br>A：</p>
 <ol>
-<li>使用 funfuzz 工具 invoke 几乎每一个小程序 API，如 invoke 失败则手动构造 input。由此得到 <strong>小程序 API - 系统 APIs 的映射</strong></li>
-<li>由于作者认为，现有的系统 API 到系统权限的映射不够精确，因此作者选择人工构造 __系统 API - 系统权限的映射__。</li>
+<li>使用 funfuzz 工具 invoke 几乎每一个小程序 API，如 invoke 失败则手动构造 input。由此得到<strong>小程序 API - 系统 APIs 的映射</strong></li>
+<li>由于作者认为，现有的系统 API 到系统权限的映射不够精确，因此作者选择人工构造 <strong>系统 API - 系统权限的映射</strong>。</li>
 <li>由此得到完整的（小程序 API - 系统 APIs - 系统权限）映射</li>
 </ol>
-<h2 id="窗口欺骗"><a href="#窗口欺骗" class="headerlink" title="窗口欺骗"></a>窗口欺骗</h2><h3 id="描述-1"><a href="#描述-1" class="headerlink" title="描述"></a>描述</h3><p>__类似钓鱼__。针对 web app 这类平台（safari、chrome 等），存在伪造登录页面的机会；针对微信、支付宝这类平台，伪造小程序付款页面。</p>
+<h2 id="窗口欺骗"><a href="#窗口欺骗" class="headerlink" title="窗口欺骗"></a>窗口欺骗</h2><h3 id="描述-1"><a href="#描述-1" class="headerlink" title="描述"></a>描述</h3><p><strong>类似钓鱼</strong>。针对 web app 这类平台（safari、chrome 等），存在伪造登录页面的机会；针对微信、支付宝这类平台，伪造小程序付款页面。</p>
 <h3 id="检测方法-1"><a href="#检测方法-1" class="headerlink" title="检测方法"></a>检测方法</h3><ol>
 <li>仍然借助 funfuzz 将每个小程序 API invoke 一遍</li>
-<li>对比调用 API 前后的截图内容，识别是否存在 __敏感字段__，从而判断是否存在窗口欺骗的潜在风险。</li>
+<li>对比调用 API 前后的截图内容，识别是否存在<strong>敏感字段</strong>，从而判断是否存在窗口欺骗的潜在风险。</li>
 </ol>
 <p>Q：敏感字段哪里来？如何定义？<br>A：参考前人工作 <a target="_blank" rel="noopener" href="https://cs.uwaterloo.ca/~yaafer/teaching/papers/nan2018ndss.pdf">NDSS18</a> 提供的敏感字段列表</p>
-<h2 id="小程序伪装"><a href="#小程序伪装" class="headerlink" title="小程序伪装"></a>小程序伪装</h2><h3 id="描述-2"><a href="#描述-2" class="headerlink" title="描述"></a>描述</h3><p>仅针对安卓系统，因为 iOS 系统对小程序的页面管理略不同。具体来说，iOS 系统不会在“最近使用”页面显示单个小程序，而安卓系统会将小程序与 APP 并列显示，这就为攻击者提供伪造小程序的机会。<br>作者观察到一个事实，每个小程序平台 APP 都有一个 __magic number__，用于管理显示小程序数量。一旦打开的小程序数量超过这个数字，APP 将在后台静默关闭第一个打开的小程序。由于用户并不知道这样一个事实，因此在 APP 静默关闭第一个小程序后，攻击者可以通过伪造 UI 装作是第一个小程序仍然打开，欺骗用户进行敏感操作。</p>
+<h2 id="小程序伪装"><a href="#小程序伪装" class="headerlink" title="小程序伪装"></a>小程序伪装</h2><h3 id="描述-2"><a href="#描述-2" class="headerlink" title="描述"></a>描述</h3><p>仅针对安卓系统，因为 iOS 系统对小程序的页面管理略不同。具体来说，iOS 系统不会在“最近使用”页面显示单个小程序，而安卓系统会将小程序与 APP 并列显示，这就为攻击者提供伪造小程序的机会。<br>作者观察到一个事实，每个小程序平台 APP 都有一个<strong>magic number</strong>，用于管理显示小程序数量。一旦打开的小程序数量超过这个数字，APP 将在后台静默关闭第一个打开的小程序。由于用户并不知道这样一个事实，因此在 APP 静默关闭第一个小程序后，攻击者可以通过伪造 UI 装作是第一个小程序仍然打开，欺骗用户进行敏感操作。</p>
 <h3 id="检测方法-2"><a href="#检测方法-2" class="headerlink" title="检测方法"></a>检测方法</h3><p>由于 magic number 及每个 APP 会静默关闭第一个小程序这个事实确然存在，因此无需检测，这些平台 APP 都存在被攻击者使用 UI 欺骗窃取用户敏感信息的风险。</p>
 <h1 id="评价"><a href="#评价" class="headerlink" title="评价"></a>评价</h1><p>这篇文章第一个研究小程序框架安全，研究对象涵盖海内外各大 Super APP。作者验证了三类漏洞确实存在，且对小程序用户影响深远，研究意义重大。<br>在技术方面，作者没有突出的贡献，但是设计的 Apinat 能够检测上述漏洞，且作者开源了一些对后续工作有帮助的资源或代码参考，还是为小程序安全研究做了很大贡献的。</p>
 
