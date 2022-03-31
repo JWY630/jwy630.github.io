@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>【技术】【小程序】MiniScrawler 工具原理解析 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="之前用到了文章(A Measurement Study of Wechat Mini-Apps)[https:&#x2F;&#x2F;web.cse.ohio-state.edu&#x2F;~lin.3021&#x2F;file&#x2F;SIGMETRICS21.pdf]提出的微信小程序半自动化收集工具(MiniCrawler)[https:&#x2F;&#x2F;github.com&#x2F;OSUSecLab&#x2F;MiniCrawler]。最近深入看一下工具实现细节。 工">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【技术】【小程序】MiniScrawler 工具原理解析">
+<meta property="og:url" content="http://example.com/2022/03/31/miniscrawler/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="之前用到了文章(A Measurement Study of Wechat Mini-Apps)[https:&#x2F;&#x2F;web.cse.ohio-state.edu&#x2F;~lin.3021&#x2F;file&#x2F;SIGMETRICS21.pdf]提出的微信小程序半自动化收集工具(MiniCrawler)[https:&#x2F;&#x2F;github.com&#x2F;OSUSecLab&#x2F;MiniCrawler]。最近深入看一下工具实现细节。 工">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-03-31T12:03:23.000Z">
+<meta property="article:modified_time" content="2022-03-31T12:36:46.059Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="小程序">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 5.4.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-miniscrawler" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2022/03/31/miniscrawler/" class="article-date">
+  <time datetime="2022-03-31T12:03:23.000Z" itemprop="datePublished">2022-03-31</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      【技术】【小程序】MiniScrawler 工具原理解析
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>之前用到了文章(A Measurement Study of Wechat Mini-Apps)[<a target="_blank" rel="noopener" href="https://web.cse.ohio-state.edu/~lin.3021/file/SIGMETRICS21.pdf]%E6%8F%90%E5%87%BA%E7%9A%84%E5%BE%AE%E4%BF%A1%E5%B0%8F%E7%A8%8B%E5%BA%8F%E5%8D%8A%E8%87%AA%E5%8A%A8%E5%8C%96%E6%94%B6%E9%9B%86%E5%B7%A5%E5%85%B7(MiniCrawler)[https://github.com/OSUSecLab/MiniCrawler]%E3%80%82%E6%9C%80%E8%BF%91%E6%B7%B1%E5%85%A5%E7%9C%8B%E4%B8%80%E4%B8%8B%E5%B7%A5%E5%85%B7%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82%E3%80%82">https://web.cse.ohio-state.edu/~lin.3021/file/SIGMETRICS21.pdf]提出的微信小程序半自动化收集工具(MiniCrawler)[https://github.com/OSUSecLab/MiniCrawler]。最近深入看一下工具实现细节。</a></p>
+<h1 id="工具介绍"><a href="#工具介绍" class="headerlink" title="工具介绍"></a>工具介绍</h1><p>工具有两个功能，一是小程序元数据收集，另一个是小程序包下载。</p>
+<h2 id="小程序元数据收集"><a href="#小程序元数据收集" class="headerlink" title="小程序元数据收集"></a>小程序元数据收集</h2><p>具体原理不难，就是拿到用户的请求参数，然后替换 request 中的 keyword 字段，批量发起请求。</p>
+<ul>
+<li>用户手动在小程序搜索页面输入关键词，工具会帮助拿到用户向服务七搜索请求的一些参数，主要是认证参数</li>
+<li>用户把这些参数和待搜索词列表放在指定位置</li>
+<li>工具即可用这些拿到的参数批量发起小程序搜索请求，拿到服务器返回的多个小程序的元数据（小程序名、小程序 AppId 等）</li>
+</ul>
+<h2 id="小程序包下载"><a href="#小程序包下载" class="headerlink" title="小程序包下载"></a>小程序包下载</h2><p>_<strong>要求</strong></p>
+<ol>
+<li>微信 App 得是 7.0.20 版本</li>
+<li>编译并安装 XposedPlugin</li>
+<li>打开任意小程序页面</li>
+<li>运行 <code>adb shell am broadcast -a android.intent.myper --es appid &quot;&#123;待下载小程序的appid&#125;&quot;</code>，工具会自动下载链接及相关信息到 /sdcard/apps.txt</li>
+</ol>
+<h3 id="逆向-XposedPlugin"><a href="#逆向-XposedPlugin" class="headerlink" title="逆向 XposedPlugin"></a>逆向 XposedPlugin</h3><p>看了 XposedPlugin 源码，注册了个 android.intent.myper 的 receiver 用来接收待下载小程序的 appid。</p>
+<p>Q：具体如何起到启动目标小程序的作用？<br>A：com.example.vsa.xposedutility.tests.WechatMiniAppsDownloader 中，工具接了 appid 之后 invoke 了小程序 API（代码如下）。通过调起 wx.navigateToMiniProgram，appid 作为参数传进去，达到从当前小程序（任意的，但需要是小程序的 context）跳转到目标小程序的目的。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Method method = next.getClass().getMethod(&quot;invokeHandler&quot;, String.class, String.class, Integer.TYPE);</span><br><span class="line">method.invoke(next, &quot;navigateToMiniProgram&quot;, &quot;&#123;\&quot;appId\&quot;:\&quot;&quot; + stringExtra + &quot;\&quot;,\&quot;extraData\&quot;:\&quot;\&quot;,\&quot;envVersion\&quot;:\&quot;release\&quot;,\&quot;scene\&quot;:1037,\&quot;sceneNote\&quot;:\&quot;\&quot;&#125;&quot;, 9999);</span><br></pre></td></tr></table></figure>
+
+<p>Q：如何拿到下载链接及包的相关信息？<br>A：com.example.vsa.xposedutility.tests.Wechat7020 类中 hookAll 中可以看出（如下图），关注的是微信 App 里的两个类：com.tencent.mm.plugin.appbrand.appcache.ba、com.tencent.mm.plugin.appbrand.jsapi.l。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">public void beforeHookedMethod(XC_MethodHook.MethodHookParam methodHookParam) throws Throwable &#123;</span><br><span class="line">    Log.d(Wechat7020.TAG, &quot;----&gt;&gt;&gt;:&quot; + methodHookParam.method.getName());</span><br><span class="line">    Utilities.printParameter(Wechat7020.TAG, methodHookParam);</span><br><span class="line">    if (methodHookParam.method.getName().equals(&quot;invokeHandler&quot;) &amp;&amp; !Wechat7020.did) &#123;</span><br><span class="line">        Wechat7020.did = true;</span><br><span class="line">        methodHookParam.thisObject.getClass().getMethod(&quot;invokeHandler&quot;, String.class, String.class, Integer.TYPE);</span><br><span class="line">    &#125;</span><br><span class="line">    if (methodHookParam.method.getDeclaringClass().getName().equals(&quot;com.tencent.mm.plugin.appbrand.appcache.ba&quot;) &amp;&amp; (methodHookParam.method instanceof Constructor) &amp;&amp; ((Constructor) methodHookParam.method).getParameterTypes().length == 4) &#123;</span><br><span class="line">        Utilities.writeToFile(&quot;/sdcard/apps.txt&quot;, (methodHookParam.args[0] + BuildConfig.FLAVOR) + &quot; &quot; + (methodHookParam.args[2] + BuildConfig.FLAVOR) + &quot; &quot; + (methodHookParam.args[3] + BuildConfig.FLAVOR) + &quot;\n&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">    if (methodHookParam.method.getDeclaringClass().getName().equals(&quot;com.tencent.mm.plugin.appbrand.jsapi.l&quot;) &amp;&amp; !WechatMiniAppsDownloader.wvs.contains(methodHookParam.thisObject)) &#123;</span><br><span class="line">        WechatMiniAppsDownloader.wvs.add(methodHookParam.thisObject);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="逆向微信"><a href="#逆向微信" class="headerlink" title="逆向微信"></a>逆向微信</h3><p>_<strong>com.tencent.mm.plugin.appbrand.appcache.ba</strong><br>根据 XposedPlugin 代码行为，应该在 hook 到该类之后写数据（包下载 url）到 /sdcard/apps.txt，但实测后没有该文件。只有在初始，需要下载微信小程序 jssdk 包的时候会调用一下，但下载普通小程序根本不走这。<br>自己又静态分析了一阵，找到了 com.tencent.mm.plugin.appbrand.appcache.bt.a(str,…) 方法，参数 str 就是下载链接。不知道为什么在我这边是 .bt 类，而作者那边是 .ba 类，apk 版本是一样的。</p>
+<p>_<strong>com.tencent.mm.plugin.appbrand.jsapi.l</strong><br>里面 invokeHandler 是调起小程序 api 的方法</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public final String invokeHandler(String str, String str2, int i)</span><br></pre></td></tr></table></figure>
+
+<p>里面 str 就是 invoke 的小程序方法名，本场景下是 “navigateToMiniProgram”，str2 是传给这个小程序方法的参数，本场景下是 JSON，包括 appId 等信息。<br>函数体内有一句（如下图），这里 trace 到后面是一个抽象类，该抽象类由多个子类实现。这些子类与 wx.subAPI 一一对应。navigateToMiniprogram 是 com.tencent.mm.plugin.appbrand.jsapi.miniprogram_navigator.g。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">String y = dVar.y(str, str2, i);</span><br></pre></td></tr></table></figure>
+
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2022/03/31/miniscrawler/" data-id="cl1ezf4650000fcwx5y0h8eyw" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="tag">小程序</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2022/03/24/esprimae/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">【技术】【JS 静态分析】Javascript 分析工具 Esprima</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/BUG%E5%8F%8D%E6%80%9D/" rel="tag">BUG反思</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/" rel="tag">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/" rel="tag">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/paperSummary/" rel="tag">paperSummary</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="tag">小程序</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/BUG%E5%8F%8D%E6%80%9D/" style="font-size: 10px;">BUG反思</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/javascript/" style="font-size: 10px;">javascript</a> <a href="/tags/paperSummary/" style="font-size: 15px;">paperSummary</a> <a href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" style="font-size: 20px;">小程序</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/03/">March 2022</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/02/">February 2022</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2022/03/31/miniscrawler/">【技术】【小程序】MiniScrawler 工具原理解析</a>
+          </li>
+        
+          <li>
+            <a href="/2022/03/24/esprimae/">【技术】【JS 静态分析】Javascript 分析工具 Esprima</a>
+          </li>
+        
+          <li>
+            <a href="/2022/03/17/Xposed/">【BUG 体质康复日记】尝试在 Android 10 安装 Xposed 踩的坑</a>
+          </li>
+        
+          <li>
+            <a href="/2022/03/11/paperCCS20/">【paper summary】Demystifying Resource Management Risks in Emerging Mobile App-in-App Ecosystems</a>
+          </li>
+        
+          <li>
+            <a href="/2022/03/03/wechat-mini-program-unpack/">【技术】【小程序】微信小程序解包工具</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2022 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>
