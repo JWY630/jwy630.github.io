@@ -64,6 +64,138 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-unpackwxError" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2022/04/22/unpackwxError/" class="article-date">
+  <time datetime="2022-04-22T02:54:08.000Z" itemprop="datePublished">2022-04-22</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/04/22/unpackwxError/">【工具】【小程序】wxUnpacker 工具“”</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>之前提到的微信小程序解包工具，在部分小程序上无法正常反编译，表现在输出结果上为得不到页面 wxml 及 wxss 文件。</p>
+<h1 id="Error-解决"><a href="#Error-解决" class="headerlink" title="Error 解决"></a>Error 解决</h1><h2 id="描述"><a href="#描述" class="headerlink" title="描述"></a>描述</h2><p>脚本解包过程中断，控制台输出</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">vm.js:519</span><br><span class="line"></span><br><span class="line">return function(env,dd,global)&#123;$gwxc=0;var root=&#123;&quot;tag&quot;:&quot;wx-page&quot;&#125;;root.children=[]</span><br><span class="line"></span><br><span class="line">^^^^^^</span><br><span class="line"></span><br><span class="line">SyntaxError: Illegal return statement</span><br><span class="line">    at VMScript.compile (/home/wq57885/wxappUnpacker/node_modules/vm2/lib/main.js:80:20)</span><br><span class="line">    at VM.run (/home/wq57885/wxappUnpacker/node_modules/vm2/lib/main.js:215:10)</span><br><span class="line">    at z (/home/wq57885/wxappUnpacker/wuWxml.js:366:7)</span><br><span class="line">    at z (/home/wq57885/wxappUnpacker/wuRestoreZ.js:244:17)</span><br><span class="line">    at catchZGroup (/home/wq57885/wxappUnpacker/wuRestoreZ.js:15:2)</span><br><span class="line">    at catchZ (/home/wq57885/wxappUnpacker/wuRestoreZ.js:19:29)</span><br><span class="line">    at getZ (/home/wq57885/wxappUnpacker/wuRestoreZ.js:244:2)</span><br><span class="line">    at wu.get.code (/home/wq57885/wxappUnpacker/wuWxml.js:354:3)</span><br><span class="line">    at ioLimit.runWithCb (/home/wq57885/wxappUnpacker/wuLib.js:80:8)</span><br><span class="line">    at agent (/home/wq57885/wxappUnpacker/wuLib.js:54:14)</span><br></pre></td></tr></table></figure>
+
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>总的来说这个问题是由于小程序包结构随版本更新有变化，导致前一位大佬的 wxUnpacker 没法正确解析 wxml 及 wxss 文件，为此 19 年另一位大佬提供了解决工具<a target="_blank" rel="noopener" href="https://github.com/larack8/wxappUnpacker">larack8</a>。</p>
+<h2 id="原因分析"><a href="#原因分析" class="headerlink" title="原因分析"></a>原因分析</h2><p>拜读了大佬解决问题的逻辑，主要如下</p>
+<h3 id="原工具解析思路"><a href="#原工具解析思路" class="headerlink" title="原工具解析思路"></a>原工具解析思路</h3><p>所有在 wxapkg 包中的 html 文件都调用了setCssToHead函数，其代码如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">var setCssToHead = function(file, _xcInvalid) &#123;</span><br><span class="line">    var Ca = &#123;&#125;;</span><br><span class="line">    var _C = [...arrays...];</span><br><span class="line">    function makeup(file, suffix) &#123;</span><br><span class="line">        var _n = typeof file === &quot;number&quot;;</span><br><span class="line">        if (_n &amp;&amp; Ca.hasOwnProperty(file)) return &quot;&quot;;</span><br><span class="line">        if (_n) Ca[file] = 1;</span><br><span class="line">        var ex = _n ? _C[file] : file;</span><br><span class="line">        var res = &quot;&quot;;</span><br><span class="line">        for (var i = ex.length - 1; i &gt;= 0; i--) &#123;</span><br><span class="line">            var content = ex[i];</span><br><span class="line">            if (typeof content === &quot;object&quot;) &#123;</span><br><span class="line">                var op = content[0];</span><br><span class="line">                if (op == 0) res = transformRPX(content[1]) + &quot;px&quot; + res; else if (op == 1) res = suffix + res; else if (op == 2) res = makeup(content[1], suffix) + res;</span><br><span class="line">            &#125; else res = content + res;</span><br><span class="line">        &#125;</span><br><span class="line">        return res;</span><br><span class="line">    &#125;</span><br><span class="line">    return function(suffix, opt) &#123;</span><br><span class="line">        if (typeof suffix === &quot;undefined&quot;) suffix = &quot;&quot;;</span><br><span class="line">        if (opt &amp;&amp; opt.allowIllegalSelector != undefined &amp;&amp; _xcInvalid != undefined) &#123;</span><br><span class="line">            if (opt.allowIllegalSelector) console.warn(&quot;For developer:&quot; + _xcInvalid); else &#123;</span><br><span class="line">                console.error(_xcInvalid + &quot;This wxss file is ignored.&quot;);</span><br><span class="line">                return;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        Ca = &#123;&#125;;</span><br><span class="line">        css = makeup(file, suffix);</span><br><span class="line">        var style = document.createElement(&quot;style&quot;);</span><br><span class="line">        var head = document.head || document.getElementsByTagName(&quot;head&quot;)[0];</span><br><span class="line">        style.type = &quot;text/css&quot;;</span><br><span class="line">        if (style.styleSheet) &#123;</span><br><span class="line">            style.styleSheet.cssText = css;</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            style.appendChild(document.createTextNode(css));</span><br><span class="line">        &#125;</span><br><span class="line">        head.appendChild(style);</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>阅读这段代码可知，它把 wxss 代码拆分成几段数组，数组中的内容可以是一段将要作为 css 文件的字符串，也可以是一个表示 这里要添加一个公共后缀 或 这里要包含另一段代码 或 要将以 wxss 专供的 rpx 单位表达的数字换算成能由浏览器渲染的 px 单位所对应的数字 的数组。</p>
+<p>同时，它还将所有被@import引用的 wxss 文件所对应的数组内嵌在该函数中的 _C 变量中。</p>
+<p>我们可以修改setCssToHead，然后执行所有的setCssToHead，第一遍先判断出 _C 变量中所有的内容是哪个要被引用的 wxss 提供的，第二遍还原所有的 wxss。值得注意的是，可能出于兼容性原因，微信为很多属性自动补上含有-webkit-开头的版本，另外几乎所有的 tag 都加上了wx-前缀，并将page变成了body。通过一些 CSS 的 AST ，例如 CSSTree，我们可以去掉这些东西。</p>
+<p><strong>wxs</strong><br>在 page-frame.html ( 或 app-wxss.js ) 中，我们找到了这样的内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">f_[&#x27;a/comm.wxs&#x27;] = nv_require(&quot;p_a/comm.wxs&quot;);</span><br><span class="line">function np_0()&#123;var nv_module=&#123;nv_exports:&#123;&#125;&#125;;nv_module.nv_exports = (&#123;nv_bar:nv_some_msg,&#125;);return nv_module.nv_exports;&#125;</span><br><span class="line"></span><br><span class="line">f_[&#x27;b/comm.wxs&#x27;] = nv_require(&quot;p_b/comm.wxs&quot;);</span><br><span class="line">function np_1()&#123;var nv_module=&#123;nv_exports:&#123;&#125;&#125;;nv_module.nv_exports = (&#123;nv_bar:nv_some_msg,&#125;);return nv_module.nv_exports;&#125;</span><br><span class="line"></span><br><span class="line">f_[&#x27;b/index.wxml&#x27;]=&#123;&#125;;</span><br><span class="line">f_[&#x27;b/index.wxml&#x27;][&#x27;foo&#x27;] =nv_require(&quot;m_b/index.wxml:foo&quot;);</span><br><span class="line">function np_2()&#123;var nv_module=&#123;nv_exports:&#123;&#125;&#125;;var nv_some_msg = &quot;hello world&quot;;nv_module.nv_exports = (&#123;nv_msg:nv_some_msg,&#125;);return nv_module.nv_exports;&#125;</span><br><span class="line">f_[&#x27;b/index.wxml&#x27;][&#x27;some_comms&#x27;] =f_[&#x27;b/comm.wxs&#x27;] || nv_require(&quot;p_b/comm.wxs&quot;);</span><br><span class="line">f_[&#x27;b/index.wxml&#x27;][&#x27;some_comms&#x27;]();</span><br><span class="line">f_[&#x27;b/index.wxml&#x27;][&#x27;some_commsb&#x27;] =f_[&#x27;a/comm.wxs&#x27;] || nv_require(&quot;p_a/comm.wxs&quot;);</span><br><span class="line">f_[&#x27;b/index.wxml&#x27;][&#x27;some_commsb&#x27;]();</span><br></pre></td></tr></table></figure>
+
+<p>可以看出微信将内嵌和外置的 wxs 都转译成np_%d函数，并由f_数组来描述他们。转译的主要变换是调用的函数名称都加上了nv_前缀。在不严谨的场合，我们可以直接通过文本替换去除这些前缀。</p>
+<p><strong>wxml</strong><br>相比其他内容，这一段比较复杂，因为微信将原本 类 xml 格式的 wxml 文件直接编译成了 js 代码放入 page-frame.html ( 或 app-wxss.js ) 中，之后通过调用这些代码来构造 virtual-dom，进而渲染网页。 首先，微信将所有要动态计算的变量放在了一个由函数构造的z数组中，构造部分代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">(function(z)&#123;var a=11;function Z(ops)&#123;z.push(ops)&#125;</span><br><span class="line">Z([3,&#x27;index&#x27;]);</span><br><span class="line">Z([[8],&#x27;text&#x27;,[[4],[[5],[[5],[[5],[1,1]],[1,2]],[1,3]]]]);</span><br><span class="line">&#125;)(z);</span><br></pre></td></tr></table></figure>
+
+<p>其实可以将[[id],xxx,yyy]看作由指令与操作数的组合。注意每个这样的数组作为指令所产生的结果会作为外层数组中的操作数，这样可以构成一个树形结构。通过将递归计算的过程改成拼接源代码字符串的过程，我们可以还原出每个数组所对应的实际内容（值得注意的是，由于微信的Token解析程序采用了贪心算法，我们必须将连续的}翻译为} }而非}}，否则会被误认为是Mustache的结束符）。下文中，将这个数组中记为z。</p>
+<p>然后，对于 wxml 文件的结构，可以将每种可能的 js 语句拆分成 指令 来分析，这里可以用到 Esprima 这样的 js 的 AST 来简化识别操作，可以很容易分析出以下内容，例如:</p>
+<ul>
+<li>var {name}=_n(‘{tag}’) 创建名称为{name}， tag 为{tag}的节点。</li>
+<li>_r({name},’{attrName}’,{id},e,s,gg) 将{name}的{attrName}属性修改为z[{id}]的值。</li>
+<li>_({parName},{name}) 将{name}作为{parName}的子节点。</li>
+<li>var {name}=_o({id},..,..,..) 创建名称为{name}，内容为z[{id}]的文本节点。</li>
+<li>var {name}=_v() 创建名称为{name}的虚节点( wxml 里恰好提供了功能相当的虚结点block, 这句话相当于var {name}=_n(‘block’))。</li>
+<li>var {name}=_m(‘{tag}’,[‘{attrName1}’,{id1},’{attrName2}’,{id2},…],[],..,..,..) 创建名称为{name}， tag 为{tag}的节点，同时将{attrNameX}属性修改为z[f({idX})]的值(f定义为{idX}与{base}的和；{base}初始为0，f返回的第一个正值后{base}即改为该返回值；若返回负值，表示该属性无值)。</li>
+<li>return {name} 名称为{name}的节点设为主节点。</li>
+<li>cs.*** 调试用语句，无视之。</li>
+</ul>
+<p>此外wx:if结构和wx:for可做递归处理。例如，对于如下wx:if结构:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">var &#123;name&#125;=_v()</span><br><span class="line">_(&#123;parName&#125;,&#123;name&#125;)</span><br><span class="line">if(_o(&#123;id1&#125;,e,s,gg))&#123;oD.wxVkey=1</span><br><span class="line">//content1</span><br><span class="line">&#125;</span><br><span class="line">else if(_o(&#123;id2&#125;,e,s,gg))&#123;oD.wxVkey=2</span><br><span class="line">//content2</span><br><span class="line">&#125;</span><br><span class="line">else&#123;oD.wxVkey=3</span><br><span class="line">//content3</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>相当于将以下节点放入{parName}节点下(z[{id1}]应替换为对应的z数组中的值)：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;block wx:if=&quot;z[&#123;id1&#125;]&quot;&gt;</span><br><span class="line">    &lt;!--content1--&gt;</span><br><span class="line">&lt;/block&gt;</span><br><span class="line">&lt;block wx:elif=&quot;z[&#123;id2&#125;]&quot;&gt;</span><br><span class="line">    &lt;!--content2--&gt;</span><br><span class="line">&lt;/block&gt;</span><br><span class="line">&lt;block wx:else&gt;</span><br><span class="line">    &lt;!--content3--&gt;</span><br><span class="line">&lt;/block&gt;</span><br></pre></td></tr></table></figure>
+
+<p>具体实现中可以将递归时创建好多个block，调用子函数时指明将放入{name}下(_({name},{son}))识别为放入对应{block}下。wx:for也可类似处理，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">具体实现中可以将递归时创建好多个block，调用子函数时指明将放入&#123;name&#125;下(_(&#123;name&#125;,&#123;son&#125;))识别为放入对应&#123;block&#125;下。wx:for也可类似处理，例如：</span><br></pre></td></tr></table></figure>
+
+<p>对应(z[{id1}]应替换为对应的z数组中的值)：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;view wx:for=&quot;&#123;z[&#123;id&#125;]&#125;&quot; wx:for-item=&quot;&#123;item&#125;&quot; wx:for-index=&quot;&#123;index&#125;&quot; wx:key=&quot;&#123;key&#125;&quot;&gt;</span><br><span class="line">    &lt;!--content--&gt;</span><br><span class="line">&lt;/view&gt;</span><br></pre></td></tr></table></figure>
+
+<p>调用子函数时指明将放入{fakeRoot}下(_({fakeRoot},{son}))识别为放入{name}下。除此之外，有时我们还要将一组代码标记为一个指令，例如下面：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">var lK=_v()</span><br><span class="line">_(&#123;parName&#125;,lK)</span><br><span class="line">var aL=_o(&#123;isId&#125;,e,s,gg)</span><br><span class="line">var tM=_gd(x[0],aL,e_,d_)</span><br><span class="line">if(tM)&#123;</span><br><span class="line">var eN=_1(&#123;dataId&#125;,e,s,gg) || &#123;&#125;</span><br><span class="line">var cur_globalf=gg.f</span><br><span class="line">lK.wxXCkey=3</span><br><span class="line">tM(eN,eN,lK,gg)</span><br><span class="line">gg.f=cur_globalf</span><br><span class="line">&#125;</span><br><span class="line">else _w(aL,x[0],11,26)</span><br></pre></td></tr></table></figure>
+
+<p>对应于{parName}下添加如下节点:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;template is=&quot;z[&#123;isId&#125;]&quot; data=&quot;z[&#123;dataId&#125;]&quot;&gt;&lt;/template&gt;</span><br></pre></td></tr></table></figure>
+
+<p>还有import和include的代码比较分散，但其实只要抓住重点的一句话就可以了，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">var &#123;name&#125;=e_[x[&#123;to&#125;]].i</span><br><span class="line">//Other code</span><br><span class="line">_ai(&#123;name&#125;,x[&#123;from&#125;],e_,x[&#123;to&#125;],..,..)</span><br><span class="line">//Other code</span><br><span class="line">&#123;name&#125;.pop()</span><br></pre></td></tr></table></figure>
+
+<p>对应与(其中的x是直接定义在 page-frame.html ( 或 app-wxss.js ) 中的字符串数组)：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;import src=&quot;x[&#123;from&#125;]&quot; /&gt;</span><br></pre></td></tr></table></figure>
+
+<p>而include类似：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">var &#123;name&#125;=e_[x[0]].j</span><br><span class="line">//Other code</span><br><span class="line">_ic(x[&#123;from&#125;],e_,x[&#123;to&#125;],..,..,..,..);</span><br><span class="line">//Other code</span><br><span class="line">&#123;name&#125;.pop()</span><br></pre></td></tr></table></figure>
+
+<p>对应与：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;include src=&quot;x[&#123;from&#125;]&quot; /&gt;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到我们可以在处理时忽略前后两句话，把中间的_ic和_ai处理好就行了。通过解析 js 把 wxml 大概结构还原后，可能相比编译前的 wxml 显得臃肿，可以考虑自动简化，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;block wx:if=&quot;xxx&quot;&gt;</span><br><span class="line">    &lt;view&gt;</span><br><span class="line">        &lt;!--content--&gt;</span><br><span class="line">    &lt;/view&gt;</span><br><span class="line">&lt;/block&gt;</span><br></pre></td></tr></table></figure>
+
+<p>可简化为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;view wx:if=&quot;xxx&quot;&gt;</span><br><span class="line">    &lt;!--content--&gt;</span><br><span class="line">&lt;/view&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="更新后"><a href="#更新后" class="headerlink" title="更新后"></a>更新后</h3><p>wcc-v0.5vv_20180626_syb_zp后通过只加载z数组中需要的部分来提高小程序运行速度，这也会导致仅考虑到上述内容的解包程序解包失败，这一更新的主要内容如下：</p>
+<ul>
+<li>增加z数组的函数:_rz _2z _mz _1z _oz</li>
+<li>在每个函数头部增加了var z=gz$gwx_{$id}()，来标识使用的z数组id</li>
+<li>原有的z数组不再存在</li>
+<li>z数组已以下固定格式出现：</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">function gz$gwx_&#123;$id&#125;()&#123;</span><br><span class="line">if( __WXML_GLOBAL__.ops_cached.$gwx_&#123;$id&#125;)return __WXML_GLOBAL__.ops_cached.$gwx_&#123;$id&#125;</span><br><span class="line">__WXML_GLOBAL__.ops_cached.$gwx_&#123;$id&#125;=[];</span><br><span class="line">(function(z)&#123;var a=11;function Z(ops)&#123;z.push(ops)&#125;</span><br><span class="line"></span><br><span class="line">//... (Z(&#123;$content&#125;))</span><br><span class="line"></span><br><span class="line">&#125;)(__WXML_GLOBAL__.ops_cached.$gwx_&#123;$id&#125;);return __WXML_GLOBAL__.ops_cached.$gwx_&#123;$id&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于上述变更，将获取z数组处修改并添加对_rz _2z _mz _1z _oz的支持即可。需要注意的是开发版的z数组转为如下结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(function(z)&#123;var a=11;function Z(ops,debugLine)&#123;z.push([&#x27;11182016&#x27;,ops,debugLine])&#125;</span><br><span class="line">//...</span><br><span class="line">&#125;)//...</span><br></pre></td></tr></table></figure>
+
+<p>探测到为开发版后应将获取到的z数组仅保留数组中的第二项。以及含分包的子包采用 gz$gwx{$subPackageId}_{$id} 命名，其中{$subPackageId}是一个数字。另外还需要注意，template的 var z=gz$gwx_{$id} 在try块外。</p>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><p>其余一些博客提到利用 larack8 大佬的工具解决问题后，还存在找不到 node 模块的问题，他们给的解决方案相同，</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">npm install -g n</span><br><span class="line">n latest</span><br><span class="line">npm update -g</span><br></pre></td></tr></table></figure>
+<p>然后再把所有需要的包 install 一遍。</p>
+<p>这边用这个方法并没有解决问题，其次私以为该错误的根本问题还是 node 环境本身，问题在nodejs怎么查找模块上。</p>
+<ul>
+<li>首先，要知道 npm 全局安装到底把模块安装到了哪个目录下面。在终端运行npm prefix -g命令会打印出安装路径。而nodejs查找模块是在module.paths目录列表下面查找的。</li>
+<li>所以，一种解决方案是在程序中将npm全局安装路径添加到module.paths中。module.paths.push(‘全局安装路径’)。然后再测试可行。这种方案只对当前js有效。</li>
+<li>另一种是添加环境变量NODE_PATH，值就设置成全局安装路径。如图中所示，添加后测试可行。</li>
+<li>其实，添加环境变量NODE_PATH后，我们再去查看module.paths时会发现环境变量中的路径也已经在module.paths中了。所以，最方便的解决办法就是：npm prefix -g 找到全局安装的路径，然后添加到环境变量NODE_PATH中。</li>
+</ul>
+<p>解决 require 问题之后再统一将 wxUnpacker-larack8 ver 需要的模块即可</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">npm install uglify-es --save</span><br><span class="line">npm install esprima  --save</span><br><span class="line">npm install css-tree  --save</span><br><span class="line">npm install cssbeautify --save</span><br><span class="line">npm install vm2  --save</span><br><span class="line">npm install uglify-es  --save</span><br><span class="line">npm install js-beautify  --save</span><br><span class="line">npm install escodegen  --save</span><br><span class="line">npm install cheerio  --save</span><br></pre></td></tr></table></figure>
+
+
+<p>参考资料<br><a target="_blank" rel="noopener" href="https://github.com/larack8/wxappUnpacker">https://github.com/larack8/wxappUnpacker</a><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/wq57885/article/details/101113017">https://blog.csdn.net/wq57885/article/details/101113017</a><br><a target="_blank" rel="noopener" href="https://jingyan.baidu.com/article/2d5afd6937ad7785a2e28e98.html">https://jingyan.baidu.com/article/2d5afd6937ad7785a2e28e98.html</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2022/04/22/unpackwxError/" data-id="cl29vn5f00000ocwx7uvhe0o7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="tag">小程序</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-apinath" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2022/04/15/apinath/" class="article-date">
@@ -814,6 +946,10 @@
       <ul>
         
           <li>
+            <a href="/2022/04/22/unpackwxError/">【工具】【小程序】wxUnpacker 工具“”</a>
+          </li>
+        
+          <li>
             <a href="/2022/04/15/apinath/">【工具】【小程序】Apinat 工具原理解析</a>
           </li>
         
@@ -827,10 +963,6 @@
         
           <li>
             <a href="/2022/03/17/Xposed/">【BUG 体质康复日记】尝试在 Android 10 安装 Xposed 踩的坑</a>
-          </li>
-        
-          <li>
-            <a href="/2022/03/11/paperCCS20/">【paper summary】Demystifying Resource Management Risks in Emerging Mobile App-in-App Ecosystems</a>
           </li>
         
       </ul>
