@@ -175,7 +175,7 @@
 <li>另一种是添加环境变量NODE_PATH，值就设置成全局安装路径。如图中所示，添加后测试可行。</li>
 <li>其实，添加环境变量NODE_PATH后，我们再去查看module.paths时会发现环境变量中的路径也已经在module.paths中了。所以，最方便的解决办法就是：npm prefix -g 找到全局安装的路径，然后添加到环境变量NODE_PATH中。</li>
 </ul>
-<p>解决 require 问题之后再统一将 wxUnpacker-larack8 ver 需要的模块即可</p>
+<p>解决 require 问题之后再统一安装 wxUnpacker-larack8 ver 需要的模块即可</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">npm install uglify-es --save</span><br><span class="line">npm install esprima  --save</span><br><span class="line">npm install css-tree  --save</span><br><span class="line">npm install cssbeautify --save</span><br><span class="line">npm install vm2  --save</span><br><span class="line">npm install uglify-es  --save</span><br><span class="line">npm install js-beautify  --save</span><br><span class="line">npm install escodegen  --save</span><br><span class="line">npm install cheerio  --save</span><br></pre></td></tr></table></figure>
 
 
