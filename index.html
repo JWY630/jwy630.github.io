@@ -64,6 +64,148 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-policyLint" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2022/05/13/policyLint/" class="article-date">
+  <time datetime="2022-05-13T06:15:17.000Z" itemprop="datePublished">2022-05-13</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/05/13/policyLint/">【技术】【安卓隐私合规】policyLint 工具原理解析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>最近在了解一些安卓隐私合规工作，主要想了解工作是如何基于 NLP 进行隐私政策文本处理的，因此记录一下经典之作 PolicyLint 的原理</p>
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>本文是发表于 Sec19 的<a target="_blank" rel="noopener" href="https://www.usenix.org/conference/usenixsecurity19/presentation/andow">PolicyLint: Investigating Internal Privacy Policy Contradictions on Google Play</a><br>这篇文章具体研究问题是，隐私政策文本内的一些表述矛盾，如同时在隐私政策内声明 <strong>我们不会收集您的个人信息</strong> 及 __我们将收集您的手机号用于xxx__，这种情况被作者认为是隐私政策内部矛盾。</p>
+<h1 id="Challenge"><a href="#Challenge" class="headerlink" title="Challenge"></a>Challenge</h1><ul>
+<li><p>对信息的引用以不同的语义层次表达</p>
+<ul>
+<li>先前工作的术语假定关系需要指定，缺乏全面性及可扩展性</li>
+<li>没有捕获推理隐私政策中提到的数据类型和实体所需的所有特定关系</li>
+</ul>
+</li>
+<li><p>隐私政策包括负面分享和收集声明</p>
+<ul>
+<li>先前工作忽略负面声明</li>
+<li>粒度粗无法处理复杂的陈述</li>
+</ul>
+</li>
+</ul>
+<h1 id="Insight"><a href="#Insight" class="headerlink" title="Insight"></a>Insight</h1><ol>
+<li><p>句子结构 informs 语义<br>共享和收集语句通常遵循一组可学习的模板。PolicyLint 使用这些模板从这些语句中提取一个四元组：（参与者、动作、数据对象、实体）。<br><code>例如，我们 [Actor] 与广告商 [entity] 共享 [action] 个人信息 [data object]。</code><br>句子结构还可以更深入地了解更复杂的负面共享。<br><code>例如，“我们与广告商共享您的电子邮件地址以外的个人信息。”</code><br>PolicyLint 通过建立在现有的词性和依赖解析器之上，从隐私政策语句中提取此类语义。</p>
+</li>
+<li><p>隐私政策编码本体<br>由于隐私政策的法律性质，一般术语通常根据示例或其组成部分来定义。虽然可能不会为政策中使用的所有术语定义语义关系，但这些关系应该存在于我们数据集中的其他一些政策中。通过处理大量隐私政策，PolicyLint 自动生成特定于政策的本体（一个用于数据对象，一个用于实体）。PolicyLint 使用赫斯特模式 [16] 提取术语定义，我们已经将其扩展到我们的领域。</p>
+</li>
+</ol>
+<h1 id="Design"><a href="#Design" class="headerlink" title="Design"></a>Design</h1><p><img src="/pics/policylint/image.png" alt="工具框架"></p>
+<ol>
+<li>Ontology Generation<br><strong>目标</strong>:在隐私政策中定义术语之间的推定（“is-a”）关系，以允许对不同粒度的语言进行推理<br><code>Example 1. We may share demographic information, such as your age and gender, with advertisers. </code><br>PolicyLint 使用这样的句子来自动发现大量隐私策略中的推定关系。 它侧重于数据对象和接收数据的实体。<br>PolicyLint 使用半自动化和数据驱动的技术来生成本体。它将本体生成分为三个主要部分。</li>
+</ol>
+<h2 id="NER-domain-adaption"><a href="#NER-domain-adaption" class="headerlink" title="NER domain adaption"></a>NER domain adaption</h2><p>PolicyLint 对现有的基于统计的命名实体识别 (NER) 模型进行 domain 适应。NER 用于标记句子中的数据对象和实体，不仅捕获术语，还捕获句子中的上下文。<br>为了识别数据对象及实体之间的假定关系，PL 需要识别词元代表的数据对象或实体。<br><code>例如上面的例子，[demographic information, age, gender] 会被识别为数据对象，[we, advertisers] 会被识别为实体。</code><br>NER（named-entity recognition）：基于统计的一种技术，用于标记句子中的数据对象及实体。</p>
+<h2 id="Subsumptive-Relationship-Extraction"><a href="#Subsumptive-Relationship-Extraction" class="headerlink" title="Subsumptive Relationship Extraction"></a>Subsumptive Relationship Extraction</h2><p>PolicyLint 通过使用一组 11（？？在后续给出的表中只有九种，文章在这一节的开头似乎写错了） 种具有强制命名实体标签约束的词汇句法模式来学习标记数据对象和实体的假定关系。</p>
+<p>PolicyLint 使用一组 9 种词汇句法模式来发现句子中的推定关系<br><img src="/pics/policylint/table2.png" alt="九种句式"><br>对每组 data object 和 entity。PolicyLint 通过对文本进行词形还原并用它们的同义词替换术语来规范化关系。</p>
+<h3 id="同义词识别"><a href="#同义词识别" class="headerlink" title="同义词识别"></a>同义词识别</h3><p>人工做的。按照 data object 出现的频率输出，频率最高的词，如果其他 data object 包含他，这些 data object 一律标注。然后结合领域知识，将同义不同词的单词也标记。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">如，发现 location 这个词出现频率最高，那么其余任意包含 location 的词，输出，人工阅读，并将他们统一标记为 geographic location。</span><br><span class="line">然后利用领域知识得出 latitude and longitude 之类的表述也被标记为 geographic location</span><br></pre></td></tr></table></figure>
+
+<h2 id="Ontology-Construction"><a href="#Ontology-Construction" class="headerlink" title="Ontology Construction"></a>Ontology Construction</h2><p>PolicyLint 将一组种子词作为输入，并使用在上一步中发现的假定关系生成数据对象/实体本体。 它迭代地将关系添加到本体，直到达到一个固定点。</p>
+<p>一组 seed，找 seed 相关的 relationships，在这些 relationships 中继续找是否有其他表述的 data object，继续找这些 data object 相关的 relationships，直到没有新的。<br><img src="/pics/policylint/seed.png" alt="seed"></p>
+<ol start="2">
+<li>Policy Statement Extraction<br>将一条 policy statement 表示为 (actor, action, data object, entitiy)<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">如，we will share your personal information with advertisers --&gt; (we, share, personal information, advertisers)</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="DED-Data-and-Entity-Dependency-Tree-Construction"><a href="#DED-Data-and-Entity-Dependency-Tree-Construction" class="headerlink" title="DED(Data and Entity Dependency) Tree Construction"></a>DED(Data and Entity Dependency) Tree Construction</h2><p>PolicyLint 合并名词短语并迭代句子标记以标记 SoC 动词。确保词元的词性（part-of-speech）标签是动词并且动词的引理在 PolicyLint 的手动管理的术语列表中<br><img src="/pics/policylint/soc.png" alt="SoC Verbs"><br>PolicyLint 然后提取句子的基于依存关系的解析树，其节点用数据对象、实体和 SoC 动词标签进行标记。<br>DED 树会删除与数据对象、实体或 SoC 动词无关的节点和路径，并执行一组简化以概括表示。 </p>
+<p><img src="/pics/policylint/ded.png" alt="DED Tree"></p>
+<ul>
+<li>__负面表达__：PolicyLint 通过检查基于依赖的分析树中的否定修饰符来识别否定动词。如果动词被否定，PolicyLint 将节点标记为负面情绪。 PolicyLint 在三种情况下将负面情绪传播到后代动词节点。<ul>
+<li>如果后代动词是带有否定动词的连词动词短语的一部分，则会传播负面情绪。 “We do not sell, rent, or trade your personal information,” means “not sell,” “not rent,” and “not trade.”</li>
+<li>如果后裔动词对否定动词有一个开放式从句补语，就会传播负面情绪。“We do not require you to disclose any personal information,” initially has “require” marked with negative sentiment. Since “disclose” is an open clausal complement to “require,” it is marked with negative sentiment. </li>
+<li>如果后代动词是否定动词的状语从句修饰语，则会传播负面情绪。 例如，“我们不会收集您的信息以与广告商分享”，最初的“收集”标记为负面情绪。 由于“share”是“collect”的状语从句修饰语，“share”被标记为负面情绪。</li>
+</ul>
+</li>
+<li>__例外表述__：含如 except、unless、aside、apart from、besides、without、not including 这类表例外情况的句子。<ul>
+<li>对于每个已识别的异常子句，PolicyLint 从异常子句向下遍历分析树，以识别与该异常相关的动词短语（主语-动词-宾语）和名词短语。</li>
+<li>PolicyLint 然后从异常项向上遍历以识别最近的动词节点，并将在向下遍历中识别的名词短语和动词短语列表附加为节点属性。</li>
+<li>在某些情况下，该术语可能没有子树。例如，例外项可能是引入从句的标记。在“我们不会共享您的个人信息，除非得到同意”这句话中，除非”一词是引入从句“您的同意已获得”的标记。 对于空子树，PolicyLint 尝试从其父节点向下遍历。</li>
+</ul>
+</li>
+</ul>
+<h2 id="SoC-sharing-or-collection-Sentence-Identification"><a href="#SoC-sharing-or-collection-Sentence-Identification" class="headerlink" title="SoC(sharing or collection) Sentence Identification"></a>SoC(sharing or collection) Sentence Identification</h2><p>PolicyLint 遍历每个句子。如果句子包含至少一个 SoC 动词和数据对象（由 NER 标记），则 构建 DED 树，将句子的 DED 树与每个已知模式的 DED 树进行比较。<br>（1）句子的 DED 树的标签类型等同于已知模式的 DED 树的标签类型（例如，{entity, SoC_verb, data}）<br>（2）已知模式的 DED 树是句子的 DED 树的子树</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2022/05/13/policyLint/" data-id="cl342hsyw00016swxgjex4xj9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android-%E9%9A%90%E7%A7%81/" rel="tag">Android, 隐私</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-pythoncmdadb" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2022/05/13/pythoncmdadb/" class="article-date">
+  <time datetime="2022-05-13T05:59:32.000Z" itemprop="datePublished">2022-05-13</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/05/13/pythoncmdadb/">【技术】【adb】python 脚本在 cmd 控制 adb</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>由于最近需要写脚本，控制 cmd 执行 adb 指令，但是 Android 环境是 magisk root 的 Android 10，所以直接在 cmd 无法用 adb 执行需要 root 权限的指令（adbd cannot run as root in production builds），试了改 ro.debuggable 和 ro.secure 都不行，于是找到了如下解决方案。实现 __python 脚本在 cmd 执行 adb 那些需要 root 的指令的方法__。</p>
+<h1 id="法1-脚本在-cmd-执行-adb-普通指令"><a href="#法1-脚本在-cmd-执行-adb-普通指令" class="headerlink" title="法1 脚本在 cmd 执行 adb 普通指令"></a>法1 脚本在 cmd 执行 adb 普通指令</h1><p>如，直接脚本运行 adb shell logcat | grep xxx 会报错 grep，可以借助</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">import os</span><br><span class="line">adbCmd = &#x27;adb shell &quot;logcat | grep xxx&quot;&#x27;</span><br><span class="line">os.popen(adbCmd)</span><br></pre></td></tr></table></figure>
+
+<h1 id="法2-脚本在-cmd-执行-adb-root-指令"><a href="#法2-脚本在-cmd-执行-adb-root-指令" class="headerlink" title="法2 脚本在 cmd 执行 adb root 指令"></a>法2 脚本在 cmd 执行 adb root 指令</h1><p>上述有些指令需要 adb root，但是 adb shell 只能在进入后依靠 <code>su</code> 进入 root，要靠如下指令实现</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">import os</span><br><span class="line">adbCmd = &#x27;adb shell &quot;su -c am start -n xxx.xx/.xActivity&quot;&#x27;</span><br><span class="line">os.popen(adbCmd)</span><br></pre></td></tr></table></figure>
+
+<h1 id="法3-脚本在-cmd-执行多行-adb-指令-进入-adb-shell"><a href="#法3-脚本在-cmd-执行多行-adb-指令-进入-adb-shell" class="headerlink" title="法3 脚本在 cmd 执行多行 adb 指令/进入 adb shell"></a>法3 脚本在 cmd 执行多行 adb 指令/进入 adb shell</h1><p>有时执行一条指令不够</p>
+<h2 id="法3-1"><a href="#法3-1" class="headerlink" title="法3.1"></a>法3.1</h2><p>通过 &amp;&amp; 连接多个 cmd 语句，从而达到执行多行 adb 语句</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">adbCmd = &#x27;adb shell &quot;logcat | grep xxx&quot; &amp;&amp; adb shell &quot;su -c am start -n xxx/.xActivity&quot;&#x27;</span><br></pre></td></tr></table></figure>
+
+<h2 id="法3-2"><a href="#法3-2" class="headerlink" title="法3.2"></a>法3.2</h2><p>靠脚本控制 cmd 进入 adb shell，体验感与直接在 cmd 进入 adb shell 最相似的方案</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">import subprocess</span><br><span class="line">handler = subprocess.Popen(&quot;adb shell&quot;, stdout = subprocess.PIPE, stdin = subprocess.PIPE)</span><br><span class="line">handler.stdin.write(b&quot;su\n&quot;)</span><br><span class="line">handler.stdin.write(b&quot;am start xxx.xx/xActivity&quot;)</span><br><span class="line">hanlder.stdin.close()</span><br><span class="line">for output_line in handler.stdout.readlines():</span><br><span class="line">    print(output_line)</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2022/05/13/pythoncmdadb/" data-id="cl342hsys00006swx3f4ofaqy" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/" rel="tag">Android</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-unpackwxError" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2022/04/22/unpackwxError/" class="article-date">
@@ -731,177 +873,12 @@
 
 
   
-    <article id="post-test" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2022/02/19/test/" class="article-date">
-  <time datetime="2022-02-19T06:08:45.000Z" itemprop="datePublished">2022-02-19</time>
-</a>
+
+
+  <nav id="page-nav">
     
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/02/19/test/">【知识】【小程序】微信小程序代码分析</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p><strong>最近在逆向小程序的代码，主要目标是实现小程序静态分析工具，因此整理一下小程序包从获取、解包到代码结构的相关知识。</strong></p>
-<h1 id="小程序包"><a href="#小程序包" class="headerlink" title="小程序包"></a>小程序包</h1><h2 id="wxapkg-包获取"><a href="#wxapkg-包获取" class="headerlink" title="wxapkg 包获取"></a>wxapkg 包获取</h2><p>安卓设备中存储在 /data/data/com.tencent.mm/MicroMsg/{UserIdHash}/appbrand/pkg/ 下 *.wxapkg</p>
-<h2 id="wxapkg-包处理"><a href="#wxapkg-包处理" class="headerlink" title="wxapkg 包处理"></a>wxapkg 包处理</h2><p>二进制文件，没有对内容加密，没有对文件压缩，是各个数据段的拼接，比较好还原，各段如下图。头部含一些字段，比较重要的有数据段长度、文件数目。索引段表示各文件的文件名长度、文件名、文件在数据段的未知、文件大小等。数据段则是每个文件的文件数据。</p>
-<p><img src="/pics/test/image.png" alt="小程序包结构"></p>
-<h1 id="小程序代码结构"><a href="#小程序代码结构" class="headerlink" title="小程序代码结构"></a>小程序代码结构</h1><h2 id="框架"><a href="#框架" class="headerlink" title="框架"></a>框架</h2><p>小程序的运行环境分成渲染层和逻辑层，其中 WXML 模板和 WXSS 样式工作在渲染层，JS 脚本工作在逻辑层。<br>框架的核心是一个响应的数据绑定系统，可以让数据与视图非常简单地保持同步。当做数据修改的时候，只需要在逻辑层修改数据，视图层就会做相应的更新。</p>
-<p><img src="/pics/test/framework.png" alt="小程序框架结构"></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- This is our View --&gt;</span><br><span class="line">&lt;view&gt; Hello &#123;&#123;name&#125;&#125;! &lt;/view&gt;</span><br><span class="line">&lt;button bindtap=&quot;changeName&quot;&gt; Click me! &lt;/button&gt;</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">// This is our App Service.</span><br><span class="line">// This is our data.</span><br><span class="line">var helloData = &#123;</span><br><span class="line">  name: &#x27;Weixin&#x27;</span><br><span class="line">&#125;</span><br><span class="line">// Register a Page.</span><br><span class="line">Page(&#123;</span><br><span class="line">  data: helloData,</span><br><span class="line">  changeName: function(e) &#123;</span><br><span class="line">    // sent data change to view</span><br><span class="line">    this.setData(&#123;</span><br><span class="line">      name: &#x27;MINA&#x27;</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
-
-<h2 id="包结构"><a href="#包结构" class="headerlink" title="包结构"></a>包结构</h2><p>小程序包含一个描述整体程序的 app 和多个描述各自页面的 page。一个小程序主体部分由三个文件组成，必须放在项目的根目录 app.json、app.js、app.wxss。</p>
-<p><img src="/pics/test/packageStructure.png" alt="小程序包结构示例"></p>
-<p>pages中代码构成 pages/xxx/index.[html | js | json | wxml]</p>
-<p><img src="/pics/test/singlePage.png" alt="小程序包内单个页面路径下文件示例"></p>
-<p>-json 后缀的 JSON 配置文件<br>-wxml 后缀的 WXML 模板文件<br>-wxss 后缀的 WXSS 样式文件<br>-js 后缀的 JS 脚本逻辑文件</p>
-<h3 id="app-json"><a href="#app-json" class="headerlink" title="app.json"></a>app.json</h3><p>当前小程序的全局配置，包括了小程序的所有页面路径、界面表现、网络超时时间、底部 tab 等。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line"># 用于描述当前小程序所有页面路径，这是为了让微信客户端知道当前你的小程序页面定义在哪个目录</span><br><span class="line">  &quot;pages&quot;:[</span><br><span class="line">    &quot;pages/index/index&quot;,</span><br><span class="line">    &quot;pages/logs/logs&quot;</span><br><span class="line">  ],</span><br><span class="line"> # 定义小程序所有页面的顶部背景颜色，文字颜色定义等</span><br><span class="line">  &quot;window&quot;:&#123;</span><br><span class="line">    &quot;backgroundTextStyle&quot;:&quot;light&quot;,</span><br><span class="line">    &quot;navigationBarBackgroundColor&quot;: &quot;#fff&quot;,</span><br><span class="line">    &quot;navigationBarTitleText&quot;: &quot;Weixin&quot;, # 通常理解为小程序名</span><br><span class="line">    &quot;navigationBarTextStyle&quot;:&quot;black&quot;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="app-service"><a href="#app-service" class="headerlink" title="app.service"></a>app.service</h3><p>逻辑层将数据进行处理后发送给视图层，同时接受视图层的事件反馈。开发者写的所有代码最终将会打包成一份 JavaScript 文件，并在小程序启动的时候运行，直到小程序销毁。<br>在 JavaScript 的基础上，微信增加了一些功能（js-callgraph分析以此为基础）：<br>-增加 App 和 Page 方法，进行程序注册和页面注册。<br>-增加 getApp 和 getCurrentPages 方法，分别用来获取 App 实例和当前页面栈。<br>-提供丰富的 API，如微信用户数据，扫一扫，支付等微信特有能力。<br>-提供模块化能力，每个页面有独立的作用域。</p>
-<p>app-service.js 是当前包中所有代码的汇总，之前介绍case时提到，解包解不出 pages/xxx/index.js时可以在 app-service.js中找到相应代码。</p>
-<h3 id="app-js"><a href="#app-js" class="headerlink" title="app.js"></a>app.js</h3><p>每个小程序都需要在 app.js 中调用 App 方法注册小程序实例，绑定生命周期回调函数、错误监听和页面不存在监听函数等。 </p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">// app.js</span><br><span class="line">App(&#123;</span><br><span class="line">  onLaunch (options) &#123;</span><br><span class="line">    // Do something initial when launch.</span><br><span class="line">  &#125;,</span><br><span class="line">  onShow (options) &#123;</span><br><span class="line">    // Do something when show.</span><br><span class="line">  &#125;,</span><br><span class="line">  onHide () &#123;</span><br><span class="line">    // Do something when hide.</span><br><span class="line">  &#125;,</span><br><span class="line">  onError (msg) &#123;</span><br><span class="line">    console.log(msg)</span><br><span class="line">  &#125;,</span><br><span class="line">  globalData: &#x27;I am global data&#x27;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
-<p>整个小程序只有一个 App 实例，是全部页面共享的。开发者可以通过 getApp 方法获取到全局唯一的 App 实例，获取App上的数据或调用开发者注册在 App 上的函数。 </p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">// xxx.js</span><br><span class="line">const appInstance = getApp()</span><br><span class="line">console.log(appInstance.globalData) // I am global data</span><br></pre></td></tr></table></figure>
-
-<h3 id="pages-xxx-index-js"><a href="#pages-xxx-index-js" class="headerlink" title="pages/xxx/index.js"></a>pages/xxx/index.js</h3><p>对于小程序中的每个页面，都需要在页面对应的 js 文件中进行注册，指定页面的初始数据、生命周期回调、事件处理函数等。简单的页面可以使用 Page() 进行构造。  </p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">//index.js</span><br><span class="line">Page(&#123;</span><br><span class="line">  data: &#123;</span><br><span class="line">    text: &quot;This is page data.&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  onLoad: function(options) &#123;</span><br><span class="line">    // 页面创建时执行</span><br><span class="line">  &#125;,</span><br><span class="line">  onShow: function() &#123;</span><br><span class="line">    // 页面出现在前台时执行</span><br><span class="line">  &#125;,</span><br><span class="line">  onReady: function() &#123;</span><br><span class="line">    // 页面首次渲染完毕时执行</span><br><span class="line">  &#125;,</span><br><span class="line">  onHide: function() &#123;</span><br><span class="line">    // 页面从前台变为后台时执行</span><br><span class="line">  &#125;,</span><br><span class="line">  onUnload: function() &#123;</span><br><span class="line">    // 页面销毁时执行</span><br><span class="line">  &#125;,</span><br><span class="line">  // 事件响应函数</span><br><span class="line">  viewTap: function() &#123;</span><br><span class="line">    this.setData(&#123;</span><br><span class="line">      text: &#x27;Set some data for updating view.&#x27;</span><br><span class="line">    &#125;, function() &#123;</span><br><span class="line">      // this is setData callback</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;,</span><br><span class="line">  // 自由数据</span><br><span class="line">  customData: &#123;</span><br><span class="line">    hi: &#x27;MINA&#x27;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
-
-<p>Page 构造器适用于简单的页面。但对于复杂的页面， Page 构造器可能并不好用。<br>此时，可以使用 Component 构造器来构造页面。 Component 构造器的主要区别是：方法需要放在 methods: { } 里面。 </p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Component(&#123;</span><br><span class="line">  data: &#123;</span><br><span class="line">    text: &quot;This is page data.&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  methods: &#123;</span><br><span class="line">    onLoad: function(options) &#123;</span><br><span class="line">      // 页面创建时执行</span><br><span class="line">    &#125;,</span><br><span class="line">    onPullDownRefresh: function() &#123;</span><br><span class="line">      // 下拉刷新时执行</span><br><span class="line">    &#125;,</span><br><span class="line">    // 事件响应函数</span><br><span class="line">    viewTap: function() &#123;</span><br><span class="line">      // ...</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
-
-<h3 id="页面路由"><a href="#页面路由" class="headerlink" title="页面路由"></a>页面路由</h3><p>实现页面之间的切换</p>
-<table>
-<thead>
-<tr>
-<th align="left">路由方式</th>
-<th align="center">触发时机</th>
-<th align="right">路由前页面</th>
-<th align="right">路由后页面</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">初始化</td>
-<td align="center">小程序打开的第一个页面</td>
-<td align="right"></td>
-<td align="right">onLoad, onShow</td>
-</tr>
-<tr>
-<td align="left">打开新页面</td>
-<td align="center">调用 API wx.navigateTo  使用组件 <navigator open-type="navigateTo"/></td>
-<td align="right">onHide</td>
-<td align="right">onLoad, onShow</td>
-</tr>
-<tr>
-<td align="left">页面重定向</td>
-<td align="center">调用 API wx.redirectTo  使用组件 <navigator open-type="redirectTo"/></td>
-<td align="right">onUnload</td>
-<td align="right">onLoad, onShow</td>
-</tr>
-<tr>
-<td align="left">页面返回</td>
-<td align="center">调用 API wx.navigateBack  使用组件<navigator open-type="navigateBack">  用户按左上角返回按钮</td>
-<td align="right">onUnload</td>
-<td align="right">onShow</td>
-</tr>
-<tr>
-<td align="left">Tab 切换</td>
-<td align="center">调用 API wx.switchTab  使用组件 <navigator open-type="switchTab"/>  用户切换 Tab</td>
-<td align="right"></td>
-<td align="right"></td>
-</tr>
-<tr>
-<td align="left">重启动</td>
-<td align="center">调用 API wx.reLaunch  使用组件 <navigator open-type="reLaunch"/></td>
-<td align="right">onUnload</td>
-<td align="right">onLoad, onShow</td>
-</tr>
-</tbody></table>
-<blockquote>
-<p>参考资料<br><a target="_blank" rel="noopener" href="https://lrdcq.com/me/read.php/66.htm">https://lrdcq.com/me/read.php/66.htm</a><br><a target="_blank" rel="noopener" href="https://kangzubin.com/wxapp-decompile-1/">https://kangzubin.com/wxapp-decompile-1/</a><br><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/36710658">https://zhuanlan.zhihu.com/p/36710658</a><br><a target="_blank" rel="noopener" href="https://developers.weixin.qq.com/miniprogram/dev/framework/quickstart/">https://developers.weixin.qq.com/miniprogram/dev/framework/quickstart/</a></p>
-</blockquote>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2022/02/19/test/" data-id="ckztirwgq0000r0wx0n8wccvt" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="tag">小程序</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2022/02/19/hello-world/" class="article-date">
-  <time datetime="2022-02-19T03:34:12.091Z" itemprop="datePublished">2022-02-19</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/02/19/hello-world/">【技术】【其他】Hexo 教程</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2022/02/19/hello-world/" data-id="ckztirwgz0001r0wxdr1r09hx" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/hexo/" rel="tag">hexo</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &amp;raquo;</a>
+  </nav>
 
 </section>
         
@@ -914,7 +891,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/BUG%E5%8F%8D%E6%80%9D/" rel="tag">BUG反思</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/" rel="tag">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/" rel="tag">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/paperSummary/" rel="tag">paperSummary</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="tag">小程序</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android/" rel="tag">Android</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Android-%E9%9A%90%E7%A7%81/" rel="tag">Android, 隐私</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/BUG%E5%8F%8D%E6%80%9D/" rel="tag">BUG反思</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/" rel="tag">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/" rel="tag">javascript</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/paperSummary/" rel="tag">paperSummary</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="tag">小程序</a></li></ul>
     </div>
   </div>
 
@@ -924,7 +901,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/BUG%E5%8F%8D%E6%80%9D/" style="font-size: 10px;">BUG反思</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/javascript/" style="font-size: 10px;">javascript</a> <a href="/tags/paperSummary/" style="font-size: 15px;">paperSummary</a> <a href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" style="font-size: 20px;">小程序</a>
+      <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Android-%E9%9A%90%E7%A7%81/" style="font-size: 10px;">Android, 隐私</a> <a href="/tags/BUG%E5%8F%8D%E6%80%9D/" style="font-size: 10px;">BUG反思</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/javascript/" style="font-size: 10px;">javascript</a> <a href="/tags/paperSummary/" style="font-size: 15px;">paperSummary</a> <a href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" style="font-size: 20px;">小程序</a>
     </div>
   </div>
 
@@ -933,7 +910,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/04/">April 2022</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/03/">March 2022</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/02/">February 2022</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/05/">May 2022</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/04/">April 2022</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/03/">March 2022</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/02/">February 2022</a></li></ul>
     </div>
   </div>
 
@@ -946,6 +923,14 @@
       <ul>
         
           <li>
+            <a href="/2022/05/13/policyLint/">【技术】【安卓隐私合规】policyLint 工具原理解析</a>
+          </li>
+        
+          <li>
+            <a href="/2022/05/13/pythoncmdadb/">【技术】【adb】python 脚本在 cmd 控制 adb</a>
+          </li>
+        
+          <li>
             <a href="/2022/04/22/unpackwxError/">【工具】【小程序】wxUnpacker 工具“SyntaxError： Illegal return statement” 错误</a>
           </li>
         
@@ -955,14 +940,6 @@
         
           <li>
             <a href="/2022/03/31/miniscrawler/">【技术】【小程序】MiniScrawler 工具原理解析</a>
-          </li>
-        
-          <li>
-            <a href="/2022/03/24/esprimae/">【技术】【JS 静态分析】Javascript 分析工具 Esprima</a>
-          </li>
-        
-          <li>
-            <a href="/2022/03/17/Xposed/">【BUG 体质康复日记】尝试在 Android 10 安装 Xposed 踩的坑</a>
           </li>
         
       </ul>
