@@ -64,6 +64,70 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-JsBridge" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2022/05/21/JsBridge/" class="article-date">
+  <time datetime="2022-05-21T02:19:58.000Z" itemprop="datePublished">2022-05-21</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/05/21/JsBridge/">【知识】【安卓】JsBridge</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><strong>学习一个 H5 与安卓原生的交互方法 JsBridge</strong></p>
+<h1 id="Js-调-Java"><a href="#Js-调-Java" class="headerlink" title="Js 调 Java"></a>Js 调 Java</h1><p>Java 创建 Handler</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">webView.registerHandler(&quot;hello&quot;, new BridgeHandler() &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public void handler(String data, CallBackFunction function) &#123;</span><br><span class="line">        CusToast.showToast(&quot;hello:&quot; + data);</span><br><span class="line">        function.onCallBack(&quot;hi there&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>Js 指定 handler</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">function test() &#123;</span><br><span class="line">    var str = &quot;world&quot;;</span><br><span class="line"></span><br><span class="line">    //send message to native</span><br><span class="line">    var data = &#123;str&#125;;</span><br><span class="line">    window.WebViewJavascriptBridge.callHandler(&#x27;hello&#x27;</span><br><span class="line">        , &#123;&#x27;param&#x27;: data&#125;</span><br><span class="line">        , function(responseData) &#123;</span><br><span class="line">            document.getElementById(&quot;show&quot;).innerHTML = responseData;</span><br><span class="line">        &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>另一种不需要指定 Hanlder 的处理模式<br>Java 创建默认 Handler</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">webView.setDefaultHandler(new BridgeHandler() &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public void handler(String data, CallBackFunction function) &#123;</span><br><span class="line">        CusToast.showToast(&quot;receive data:&quot; + data);</span><br><span class="line">        function.onCallBack(&quot;okay&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>Js 发消息</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">function test() &#123;</span><br><span class="line">    var data = &quot;&quot;;</span><br><span class="line">    window.WebViewJavascriptBridge.send(</span><br><span class="line">            data</span><br><span class="line">            , function(responseData) &#123;</span><br><span class="line">                document.getElementById(&quot;show&quot;).innerHTML = &quot;repsonseData from java, data = &quot; + responseData</span><br><span class="line">            &#125;</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="Java-调-Js"><a href="#Java-调-Js" class="headerlink" title="Java 调 Js"></a>Java 调 Js</h1><p>Js 创建 Hanlder</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">connectWebViewJavascriptBridge(function(bridge) &#123;</span><br><span class="line">    bridge.registerHandler(&quot;Jsfunc&quot;, function(data, responseCallback) &#123;</span><br><span class="line">        document.getElementById(&quot;init&quot;).innerHTML = (&quot;data: &quot; + data);</span><br><span class="line">        if (responseCallback) &#123;</span><br><span class="line">            var responseData = &quot;okay&quot;;</span><br><span class="line">            responseCallback(responseData);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>Java 指定 Handler</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">button.setOnClickListener(new View.OnClickListener() &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public void onClick(View v) &#123;</span><br><span class="line">        webView.callHandler(&quot;Jsfunc&quot;, &quot;test data&quot;, new CallBackFunction() &#123;</span><br><span class="line"></span><br><span class="line">            @Override</span><br><span class="line">            public void onCallBack(String data) &#123;</span><br><span class="line">                CusToast.showToast(&quot;js resp: &quot; + data);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>同样有不指定 Hanlder 的模式<br>Js 创建</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">connectWebViewJavascriptBridge(function(bridge) &#123;</span><br><span class="line">    bridge.init(function(message, responseCallback) &#123;</span><br><span class="line">        console.log(&#x27;message:&#x27;, message);</span><br><span class="line">        var data = &quot;got it&quot;;</span><br><span class="line">        console.log(&#x27;JS resp: &#x27;, data);</span><br><span class="line">        responseCallback(data);</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>Java 层</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">webView.send(&quot;message from Java&quot;, new CallBackFunction() &#123;</span><br><span class="line">    @Override</span><br><span class="line">    public void onCallBack(String data) &#123;</span><br><span class="line">        CusToast.showToast(&quot;Js resp: &quot; + data);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2022/05/21/JsBridge/" data-id="cl3f98z1o00001cwx6hjy5ff7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Android/" rel="tag">Android</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-policyLint" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2022/05/13/policyLint/" class="article-date">
@@ -726,153 +790,6 @@
 
 
   
-    <article id="post-summary-flash-boy-2" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2022/02/24/summary-flash-boy-2/" class="article-date">
-  <time datetime="2022-02-24T10:45:43.000Z" itemprop="datePublished">2022-02-24</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2022/02/24/summary-flash-boy-2/">【paper summary】 Flash Boys 2.0:Frontrunning, Transaction Reordering, and Consensus Instability in Decentralized Exchanges</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="概要"><a href="#概要" class="headerlink" title="概要"></a>概要</h1><h2 id="文章信息"><a href="#文章信息" class="headerlink" title="文章信息"></a>文章信息</h2><p>-Flash Boys 2.0:Frontrunning, Transaction Reordering, and Consensus Instability in Decentralized Exchanges<br>-link: <a target="_blank" rel="noopener" href="https://pdaian.com/flashboys2.pdf">https://pdaian.com/flashboys2.pdf</a><br>-publish: Security 20</p>
-<h2 id="研究问题"><a href="#研究问题" class="headerlink" title="研究问题"></a>研究问题</h2><p>该工作解释了 DEX 设计缺陷威胁到底层区块链安全。通过研究一个利用 DEX 漏洞出现的套利机器人社区。研究结果表明，这些机器人表现出许多类似的市场开发行为——抢先交易、积极的延迟优化等。<br>该工作探索了催生套利机器人的 DEX 设计缺陷，衡量和建模这些机器人的行为，并阐明发现中暗示的系统性智能合约生态系统风险。</p>
-<h2 id="贡献"><a href="#贡献" class="headerlink" title="贡献"></a>贡献</h2><ul>
-<li>报道了一个相当大的机器人经济体，他们从 DEX 中的交易排序提供的机会中获利。作者量化了特定套利子集的广度，纯粹收入机会，为订单操纵的盈利能力提供了下限。</li>
-<li>正式模拟了机器人在优先 gas 拍卖中相互竞争矿工提供的交易优先级的行为。实证研究验证了模型的几个关键预测，包括机器人在一种盈利合作形式上的融合，这种合作形式涉及最小的 gas 价格上涨。文章还表明，在许多具体案例中，仅来自纯收入套利的机器人收入就远远超过了以太坊的区块奖励和交易费用。</li>
-<li>最后，作者认为矿工可提取的价值，特别是订单优化费用，修改交易订单的隐性费用，威胁到区块链共识的稳定性。此类费用足以补贴对网络的严重攻击。它们构成了一种经济脆弱性，应该是以太坊当前关注的一个原因。</li>
-</ul>
-<h2 id="前人工作的不足"><a href="#前人工作的不足" class="headerlink" title="前人工作的不足"></a>前人工作的不足</h2><p>其他工作集中在围绕智能合约前端运行的知识系统化，包括引用这项工作的早期公开版本，但尚未衡量该经济体的规模，或把它与协议攻击的联系正式化。</p>
-<h1 id="1-Background"><a href="#1-Background" class="headerlink" title="1. Background"></a>1. Background</h1><h2 id="pure-revenue-opportunities"><a href="#pure-revenue-opportunities" class="headerlink" title="pure revenue opportunities"></a>pure revenue opportunities</h2><p>场景：在智能合约系统中<br>成员：正常人 Alice，恶意 bot Bob<br>若 Alice 订单簿信息填写错误，如市场价 1 ETH 就可以买到 1 Token，但 Alice 的订单簿错写为“Buy 1 Token for 10 ETH”，此刻 Alice 可以发起取消交易。但 Bob 也可以发起交易 take 这次“不合理”的交易，只需增加 Gas 费用，使矿工在排序时将自己的交易排在 Alice 的 cancel 交易之前（即 frontrun），Bob 就可以以高于市场的价格卖出自己的 Token，净赚 9 ETH。过程如下图</p>
-<p><img src="/pics/flashboy2/1.png" alt="pure revenue opportunities"></p>
-<p>这样的套利机会被作者成为 pure revenue opportunities，纯粹收入机会。然而作者研究的场景是，在两个 bot 都发现粗心的 Alice 的订单簿后，为套利而互相竞价，如下图所示，两个套利机器人依靠不断增多自己的 Gas 价格与对方竞争，目的就是让矿工排序时，自己的交易排在对方前面，从而套取 Alice 损失的利益。这一过程被作者成为 PGA（Priority Gas Auction）。</p>
-<p><img src="/pics/flashboy2/2.png" alt="2 bots competing for pure revenue opportunities"></p>
-<h1 id="2-INTRO"><a href="#2-INTRO" class="headerlink" title="2. INTRO"></a>2. INTRO</h1><h2 id="作者关注的五个研究点"><a href="#作者关注的五个研究点" class="headerlink" title="作者关注的五个研究点"></a>作者关注的五个研究点</h2><p><strong>作者的关注点可以分为两类，一是应用层的纯粹收入机会，以及 bot 间为了纯粹收入而竞争的 PGA。另一类是区块链底层，矿工利用信息差可以获取的矿工可提取价值 MEV（Miner-Extractable Value），为了获取这种可提取价值，本文描述了两类攻击方法，分别是基于费用的分叉攻击，以及时间强盗攻击。</strong></p>
-<ul>
-<li>Pure revenue opportunities 纯粹收入机会：DEX 套利的一个特定子类别，代表更广泛的活动，这些是区块链交易，通过智能合约自动发布多笔交易，并在每笔交易资产中无条件获利。作者选择这些机会作为重点，因为它们的简单性使它们特别适合研究和测量。本文通过实验确定了迄今为止该经济体超过 600 万美元的下限，并描述了其参与的交易所和机器人。</li>
-<li>优先GAS拍卖 (PGA，Priority Gas Auctions)：由于纯粹的收入机会提供无条件的收入，套利机器人经常通过竞标交易费用 (gas) 来相互竞争。作者正式对机器人 PGA 行为建模并观察合作平衡。</li>
-<li>矿工可提取价值（MEV，Miner-Extractable Value）：矿工可直接从智能合约中提取的价值，作为加密货币的利润。 MEV 的一个特殊来源是排序优化 (ordering optimization，OO) 费用，这是由于矿工控制特定时期内的交易排序而产生的。PGA 和纯收入机会提供了一种 OO 费用来源。研究表明 MEV 会产生系统性共识层漏洞。</li>
-<li>基于费用的分叉攻击 Fee-based Forking Attacks：本文表明，OO 费用可以激励矿工进行分叉攻击。虽然之前在比特币中对基于费用的攻击进行了理论上的研究，但本文凭经验证明了以太坊中当前的现实威胁。</li>
-<li>时间强盗攻击 Time-bandit Attacks：本文表明，高 MEV 机制通常会导致一种新的攻击，在这种攻击中，矿工重写区块链历史以窃取过去智能合约分配的资金。作者称这些时间为时间强盗攻击。实验表明，来自纯收入利润和 PGA 机器人费用的 MEV 足以实现对当今以太坊的时间强盗攻击。</li>
-</ul>
-<h2 id="两个关键原因"><a href="#两个关键原因" class="headerlink" title="两个关键原因"></a>两个关键原因</h2><p><strong>作者声明自己的发现惊人主要有两个关键原因,本人理解的是,作者从 high-level 的两点阐述本安全威胁实际影响了从应用层到共识层这样一个事实（作者也在文章中反复强调这是文章的贡献之一）背后他认为的两点原因，第一点是底层安全模型差异，第二点是协议细节。具体来说就是</strong></p>
-<ul>
-<li>作者发现对比比特币这样的支付系统和以太坊这样的智能合约系统，其共识层安全模型是不同的，由于这样的差异，即比特币这样的支付系统执行原子操作，而以太坊的智能合约系统存在非原子性，所以会有这种攻击出现。</li>
-<li>作者的分析结果还让作者有另一点重要发现，就是协议细节可以直接影响应用层安全性和智能合约为用户提供的公平性。通常智能合约安全性仅在应用层进行研究，抽象出矿工选择和 P2P中继器行为等低级细节，使理论研究易于处理。但是这样简单地抽象反而忽略了一个问题，就是低级协议行为也对智能合约构成根本挑战。</li>
-</ul>
-<h1 id="3-Measurement-Study"><a href="#3-Measurement-Study" class="headerlink" title="3. Measurement Study"></a>3. Measurement Study</h1><h2 id="实验设置"><a href="#实验设置" class="headerlink" title="实验设置"></a>实验设置</h2><p>由于现有工具没有能分析未确认和被拒绝的交易，作者编写了自己的工具，fork 了 GoEthereum 客户端，在内存池中记录未确认的交易。在多个数据中心部署了六个地理分布式节点，时间戳通过 NTP 同步到纳秒级。每次 ≈ 256 个节点中的一个与部署的修改节点之一对等时，都会收集一个观察结果，将事务转发给。作者共收集了 9 个月的数据，总计超过 300 GB，其中包括对 PGA 套利机器人的 708,385,840 次独特观察。节点位置如下图所示。</p>
-<p><img src="/pics/flashboy2/3.png" alt="节点部署"></p>
-<p>因为存储每笔以太坊交易的观察结果在技术上是不可行的，所以作者专注于可疑套利机器人交易的列表。该列表以观察到的在区块链上执行纯收入交易的账户为种子，并在任何时候以高于当前 gas 市场价格的数量级看到高价值 gas 替代交易时动态更新。</p>
-<p>收集到数据后，作者开发了一套Python脚本来组合和分析这些数据。使用启发式方法（没有细说）将所有观察放到一个时间轴上，在发生高值 gas 替换事务时标识PGA。在此观察的时间间隔内的所有交易都被视为“拍卖”的一部分，分解为每个 bot 的行为。这些脚本还会对观察到的机器人的PGA、计算策略和延迟趋势进行统计。</p>
-<h2 id="Limitations"><a href="#Limitations" class="headerlink" title="Limitations"></a>Limitations</h2><p>作者认为，实验设置仍然存在以下缺陷，理论上都会导致收集到的数据不完备，所以作者反复声明，该文章的发现仅作为现实世界中实际情况的下限参考。</p>
-<ul>
-<li>交易可能在到达节点之前被替换。尽管作者实际观察来看似乎不太可能，因为观察到的每个交易往往有数百个相关的 observation。</li>
-<li>用于识别 PGA 的时间切片方法可能会将不相关的机器人活动集中到一个单一的“拍卖”中。（作者人工检查表明，由于拍卖相对不频繁，每隔几个小时进行一次，因此大部分拍卖由相关的机器人活动组成。）</li>
-<li>时间切片还可以从其他非 PGA 行为的套利机器人中获取不相关的交易。作者通过仅包含在观察到的 PGA 中放置至少 4 个“出价”的机器人来在汇总统计数据中剪枝，因此可能缺少关于放置小于 4 次出价的机器人的数据。</li>
-<li>也可能会错过地址不在 PGA 列表中的机器人，从而导致在某些拍卖中错过投标人。</li>
-<li>工具通过解析支持交易所的交易日志来计算纯收入机会，这些交易日志包含由智能合约执行的两个以上交易。研究仅支持有限的流行 DEX 子集，忽略了不受支持的交易所的收入机会。实验支持的交易所包括基础设施开发时持续交易量排名前五的 DEX。</li>
-</ul>
-<h2 id="5-Observations"><a href="#5-Observations" class="headerlink" title="5 Observations"></a>5 Observations</h2><h3 id="市场规模"><a href="#市场规模" class="headerlink" title="市场规模"></a>市场规模</h3><ul>
-<li>在 2017 年末的初始市场发展之后，出现了一个相对活跃的套利期，在此期间，机器人通常每天执行超过 1,000 笔交易，每日收入为 10-100 ETH。</li>
-<li>后来，市场逐渐成熟，利润分配更加稳定一致，每天有 1-10 ETH 可供套利。</li>
-<li>作者发文前期，观察到越来越多的纯收益交易，表明 DEX 市场的趋势是更小的零售交易和更高效的市场设计，降低了平均机会规模，但为更高效的机器人市场提供了更频繁的机会。</li>
-<li>垂线：2017 年 8 月，作者发布了一份关于去中心化套利和相关机器人设计危险的初步报告。博客发布日期显示为图表上的垂直线。那篇文章中作者执行自己的交易机器人来确认利润的技术可行性，观察到为自己的机器人获取纯收入的成功率为 58%。在图 6 中，今天大多数盈利的机器人在作者公开发布后不久就加入了，这无意中引发了山寨机器人经济的繁盛！</li>
-</ul>
-<p><img src="/pics/flashboy2/4.png" alt="Fig 4"></p>
-<h3 id="交易所收入"><a href="#交易所收入" class="headerlink" title="交易所收入"></a>交易所收入</h3><ul>
-<li>图 5 显示了自 2018 年 4 月以来按交易所划分的纯收入市场细分（Etherdelta 以外的第一个重要纯收入机会，代表新的交易所上线）。</li>
-<li>观察到一个寡头垄断的纯收入市场，其中  etherdelta 产生了大部分观察到的纯收入。</li>
-<li>尽管如此，一系列其他交易所为机器人提供了越来越多且相对一致的机会分布。因为作者的调研只支持某些交易所，所以这张图可能会缺少不支持的交易所，市场总量只提供了一个下限。</li>
-</ul>
-<p><img src="/pics/flashboy2/5.png" alt="Fig 5"></p>
-<h3 id="机器人收入"><a href="#机器人收入" class="headerlink" title="机器人收入"></a>机器人收入</h3><ul>
-<li>图 6 显示了在竞争激烈的纯收入市场中观察到的前 10 名交易发送者及其相关利润。为这些机器人测量的成本仅包括它们进行的纯收入交易的 gas，因此可能会低估它们的总费用（例如失败的交易）。作者也不包括任何不在他们支持的交易所进行交易的机器人。</li>
-<li>正如在交易所细分中一样，这个数字表明了一个寡头垄断市场，单个机器人通常在很长一段时间内主导利润空间（例如，0xaa24…主导着最近的纯收入空间，其中 0x0000…经历了很长一段时间2017 年底和 2018 年初的主导地位）。</li>
-<li>顶级机器人在未能更新其策略后退出市场的行为。例如 0xa53… 在 03/18 左右退出，而 0xf13… 在 2017 年底市场早期退出。尽管如此，许多机器人享有长期的盈利能力，并继续运行多年。</li>
-</ul>
-<p><img src="/pics/flashboy2/6.png" alt="Fig 6"></p>
-<h3 id="市场收入与利润"><a href="#市场收入与利润" class="headerlink" title="市场收入与利润"></a>市场收入与利润</h3><ul>
-<li>图 7 描述了在优先 gas 拍卖中观察到的纯收入机会的利润和收入之间的细分，表明至少有一个机器人提出了竞争性的 gas 替代投标以抓住这样的机会。</li>
-<li>虽然在 0 利润附近出现了峰值，这表明许多 PGA 机会对玩家来说是零或负和，但绝大多数这些机会的成本相对微不足道，而且利润分配仍然为获胜的机器人提供了平均利润，为他们提供了 大部分相关收入。</li>
-<li>这证实了作者此前的怀疑，机器人可能参与不协调的合作，以牺牲矿工的利益来维持 PGA 市场的盈利能力。（这点没明白，是怎么从图上看出这点的。另外就是，根据直觉，竞争通过抬高 Gas 实现，那么矿工应该是获利才对，为什么作者说 PGA 市场的盈利能力是需要牺牲矿工的利益来维持？）</li>
-</ul>
-<p><img src="/pics/flashboy2/7.png" alt="Fig 7"></p>
-<h3 id="PGA-中的-Gas-成本"><a href="#PGA-中的-Gas-成本" class="headerlink" title="PGA 中的 Gas 成本"></a>PGA 中的 Gas 成本</h3><ul>
-<li>图 8 显示了随着时间的推移 gas 优化的趋势。在 04/18 之前，主要观察到 Etherdelta 趋势正如作者预期，结果显示机器人优化了他们的 gas 成本，随着时间的推移有明显的下降趋势，</li>
-<li>但随着更复杂的交易所的出现表明市场成熟，执行的机会更复杂，每笔交易需要更多的 gas。每笔交易的交易数量也有所增加，现在平均每笔交易超过两笔交易。这种趋势的部分原因是由于像 Kyber 这样的“流动性池”交易所设计，它允许使用交易所合约作为在其他交易所进行交易的代理。</li>
-<li>该图上的橙色虚线显示了作者公开发布的名为 GasToken 的代币。它利用了以太坊激励模型中的一项功能，使套利者能够随着时间的推移进行 gas 套利，以低于市场的价格储存 gas，并将其用于赢得 PGA。执行这种 gas 利的机制会向矿工提供数量出价的交易退款，从而诱使矿工接受低于预期的出价。因为允许机器人以相同的成本以更少的数量竞标更高的 gas 价格，所以这个代币现在是竞争参与纯收入套利市场的必要条件。这反映在这张趋势图中，在这种代币发行后，矿工对 gas 机器人的需求急剧下降。</li>
-</ul>
-<p><img src="/pics/flashboy2/8.png" alt="Fig 8"></p>
-<h2 id="PGA-模型"><a href="#PGA-模型" class="headerlink" title="PGA 模型"></a>PGA 模型</h2><p>作者构建 PGA 模型形式化地研究 bot 间竞价的策略。作者的模型主要有下列属性，</p>
-<ol>
-<li>连续时间：玩家在连续的时间内行动，而不是离散的回合（如在典型的广泛形式游戏中）。 这是因为区块链网络是异步的。</li>
-<li>信息不完善：玩家最终会看到彼此的出价，但不会立即看到，这是一种对区块链网络延迟进行建模的特征。玩家 Pi 在某个固定时间 Δi 后观察其他玩家的出价。玩家可能有不同的延迟，较小的延迟赋予竞争优势。作者将延迟测量为与矿工延迟的相对数字，这些矿工通常是网络中连接最好的节点。因此，Δi = 0 表明 Pi 具有优越的网络位置，并且可以观察其他玩家的出价，而不会比矿工的出价产生额外的延迟。</li>
-<li>全部付费：在 PGA 中，失败的玩家为失败的交易支付 gas 费用。作者的模型通过让失败的玩家 P 支付 l($blast) 来捕获这一成本，其中 $blast 是 P 的最后一次出价，而 l() 是损失函数。这种玩家可以多次出价的拍卖被称为美元拍卖，其中不仅赢家，输家也要支付。在本研究中，作者通常观察到部分全额支付的拍卖，即 l($blast) &lt; $blast。</li>
-<li>概率拍卖持续时间：拍卖在随机确定的时间终止，即下一个区块被开采时。对于以太坊等工作量证明区块链，作者将区块间隔建模为随机变量 D，它呈指数分布</li>
-<li>限速出价：玩家不能连续提高自己的出价，必须等待很短的时间间隔 δ。这反映了区块链对等网络为防止 flooding 攻击而执行的节流。由于矿工总是可以自由地包含他们观察到的最高支付交易，因此玩家只能提高出价，而不是降低出价（以太坊 PGA 中的自然拍卖功能）</li>
-<li>最低起拍价：虽然以太坊没有规定的最低 gas 价格，但在实践中，PGA 参与者希望以能够让他们有机会进入下一个区块的价格开始出价。(换句话说，如果一个人出价过低，那么即使没有其他人出价反对他们，矿工也可能不会将交易包含在他们的区块中。 )因此，虽然没有严格执行，但作者将拍卖建模为具有最低起拍价，s。</li>
-<li>最小投标增量：玩家不能自由地以任意增量提高投标。取而代之的是，有一个最低加价 ι，它是作为玩家之前的出价的函数来衡量的。 这与以太坊动态相匹配，其中一个人可以用另一笔交易替换他们的交易，但只有当 gas 价格上涨了一个最低阈值时，它才会由点对点网络中继。 Parity 是最常见的以太坊节点软件，默认最小增量为 12:5%。</li>
-</ol>
-<h2 id="PGA-策略"><a href="#PGA-策略" class="headerlink" title="PGA 策略"></a>PGA 策略</h2><p>作者从策略空间中，选取三种竞标策略介绍。</p>
-<ul>
-<li><p>Binding Raising 盲目加注</p>
-<ul>
-<li>盲注是一种简单的非适应性策略。玩家 Pi 在预定的时间表下提高自己的出价，并且该策略对于其他玩家出价的历史是不变的。在观察到的 PGA 中，此计划通常涉及以固定的分数增量（例如，12.5%、21% 或 70%）重复增加。 因此，基本盲注也是确定性的（“纯”）。 </li>
-<li>乍一看，这种策略和一般的非自适应策略似乎是个坏主意：它们无法利用 b∗ 中玩家可用的信息。 然而，网络延迟产生的不完美信息意味着非自适应策略可以比自然自适应策略获得优势。玩家可以更快地发布出价，而不是等待看到对方玩家的出价并做出反应。</li>
-</ul>
-</li>
-<li><p>CounterBidding 对叫</p>
-<ul>
-<li>还价是一种策略，其中玩家观察对手的出价策略并通过提出更高的对方出价来做出反应。与盲目加注策略相比，反应性还价可以取得优势——尽可能快地以少量出价超过 P0，前提是出价提高了所需的最低限度。</li>
-</ul>
-</li>
-<li><p>Cooperation 合作</p>
-<ul>
-<li>玩家缓慢交替提高出价。请注意，由于出价是非递减的，玩家每次连续提交出价，机会的最大盈利能力都会降低。减少游戏中的出价总数对所有玩家都是有益的。然后很自然地假设，只要有可能，玩家将在带外协调以分配利润，而不是通过在链上竞标来减少利润。 然而，实际情况是完美的合作并不存在。</li>
-<li>链下协调<ul>
-<li>在观察中，作者发现了许多只有一个参与者的套利机会，而且链下协调完全有可能在这里发挥作用，尽管就其本质而言，链上没有足够的数据来证实这一点。</li>
-<li>虽然链下合作可能有意义，特别是在重复游戏中，但它有一些缺点，包括缺乏匿名性。</li>
-</ul>
-</li>
-<li>研究表明，在合适的参数下，双方都存在纳什均衡以遵循合作策略。要使合作均衡出现，玩家不必明确地进行带外协调，但这种行为可以在链上有机地发展。事实上，观察结果表明，随着时间的推移，玩家已经更接近于合作平衡，这与实验博弈论中众所周知的结果一致，即野外参与者将随着时间的推移收敛到平衡。</li>
-</ul>
-</li>
-</ul>
-<h2 id="MEV"><a href="#MEV" class="headerlink" title="MEV"></a>MEV</h2><p>作者工作的一个关键结果是应用层安全对共识层安全构成了当前和直接的威胁。订单优化 (Order Optimization) 费用或矿工通过利用他们对共识时期的控制而能够获得的隐性费用，可能会超过区块奖励，反而会激励分叉攻击。为了获得 OO 费用，矿工可以重新排序用户的交易，并可能将他们自己的交易插入到他们的账户中，从而直接从 Ether 中获得利润。</p>
-<h3 id="undercutting-attack"><a href="#undercutting-attack" class="headerlink" title="undercutting attack"></a>undercutting attack</h3><p>矿工可以分叉一个高费用的区块，保留一些费用以吸引其他矿工在分叉上进行构建。在极端情况下，偏离协议的动机可能会导致经济理性矿工的矿工策略中断，从而降低区块确认提供的安全性。</p>
-<p><img src="/pics/flashboy2/9-1.png" alt="undercutting"><br><img src="/pics/flashboy2/9-2.png" alt="undercutting"></p>
-<h3 id="time-bandit-attack"><a href="#time-bandit-attack" class="headerlink" title="time-bandit attack"></a>time-bandit attack</h3><p>假设一个区块链有一个（子链）[height0; height1]，当前区块高度 height1，其中可窃取的价值超过了区块奖励。对手可以回退到 height0 并使用由此产生的 MEV 来补贴可盈利的 51% 攻击，该攻击将分叉挖掘到或超过 height1。当然，time-bandit 攻击依赖于对海量挖矿资源的实时访问。使用云资源理论上是可行的，特别是对于像以太坊这样严重依赖 GPU 的系统，GPU 是标准的云商品。</p>
-<p><img src="/pics/flashboy2/10-1.png" alt="time-bandit"><br><img src="/pics/flashboy2/10-2.png" alt="time-bandit"></p>
-<h1 id="4-总结"><a href="#4-总结" class="headerlink" title="4. 总结"></a>4. 总结</h1><p><strong>文章作者关注以太坊智能合约系统中的纯粹收入机会，该安全威胁使得套利机器人竞标这一场景存在，因此作者对该现象展开调研，并形成有关该场景的多个发现。同时作者认为，这一问题反映了另一个事实，就是应用层的安全威胁，实际上也会给底层（即共识层）带来安全威胁，具体而言，矿工会为了攫取利益而展开攻击从而影响共识层的公平性。作者从理论上分析了两种具体攻击的可行性，论证自己的观点。</strong></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2022/02/24/summary-flash-boy-2/" data-id="cl00xayiu0000egwxf8pg7cam" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/paperSummary/" rel="tag">paperSummary</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
 
 
   <nav id="page-nav">
@@ -901,7 +818,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Android/" style="font-size: 10px;">Android</a> <a href="/tags/Android%E9%9A%90%E7%A7%81/" style="font-size: 10px;">Android隐私</a> <a href="/tags/BUG%E5%8F%8D%E6%80%9D/" style="font-size: 10px;">BUG反思</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/javascript/" style="font-size: 10px;">javascript</a> <a href="/tags/paperSummary/" style="font-size: 15px;">paperSummary</a> <a href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" style="font-size: 20px;">小程序</a>
+      <a href="/tags/Android/" style="font-size: 15px;">Android</a> <a href="/tags/Android%E9%9A%90%E7%A7%81/" style="font-size: 10px;">Android隐私</a> <a href="/tags/BUG%E5%8F%8D%E6%80%9D/" style="font-size: 10px;">BUG反思</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/javascript/" style="font-size: 10px;">javascript</a> <a href="/tags/paperSummary/" style="font-size: 15px;">paperSummary</a> <a href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" style="font-size: 20px;">小程序</a>
     </div>
   </div>
 
@@ -923,6 +840,10 @@
       <ul>
         
           <li>
+            <a href="/2022/05/21/JsBridge/">【知识】【安卓】JsBridge</a>
+          </li>
+        
+          <li>
             <a href="/2022/05/13/policyLint/">【技术】【安卓隐私合规】policyLint 工具原理解析</a>
           </li>
         
@@ -936,10 +857,6 @@
         
           <li>
             <a href="/2022/04/15/apinath/">【技术】【小程序】Apinat 工具原理解析</a>
-          </li>
-        
-          <li>
-            <a href="/2022/03/31/miniscrawler/">【技术】【小程序】MiniScrawler 工具原理解析</a>
           </li>
         
       </ul>
