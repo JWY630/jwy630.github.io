@@ -64,6 +64,75 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-wechat-mini-program-unpack" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2022/03/03/wechat-mini-program-unpack/" class="article-date">
+  <time datetime="2022-03-03T10:28:18.000Z" itemprop="datePublished">2022-03-03</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2022/03/03/wechat-mini-program-unpack/">【技术】【小程序】微信小程序解包工具</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>接上次小程序的基础知识，分享一个小程序解包工具<a target="_blank" rel="noopener" href="https://github.com/xuedingmiaojun/wxappUnpacker">wxunpacker</a>（base64 解码跳转新链接）。</p>
+<h1 id="小程序包结构"><a href="#小程序包结构" class="headerlink" title="小程序包结构"></a>小程序包结构</h1><p><a target="_blank" rel="noopener" href="https://jwy630.github.io/2022/02/19/test/">上篇文章</a>提到过，小程序的 wxapkg 文件实际上是个二进制文件，没有加密等复杂操作。<br>其结构可以分为三个部分，header、index 及 data。</p>
+<h2 id="Header"><a href="#Header" class="headerlink" title="Header"></a>Header</h2><ul>
+<li>8 位：firstMark，总为 190（0xbe）</li>
+<li>32 位：未知含义，目前来看总为 0</li>
+<li>32 位：Index 段长度</li>
+<li>32 位：Data 段长度</li>
+<li>8 位：lastMark，总为 237（0xed）</li>
+<li>32 位：文件数目，<strong>fileCount</strong></li>
+</ul>
+<h2 id="Index"><a href="#Index" class="headerlink" title="Index"></a>Index</h2><p>单个文件的字段如下，一个 wxapkg 中有 <strong>fileCount</strong> 个这样的字段</p>
+<ul>
+<li>32 位：文件名长度 nameLength</li>
+<li>长度为 nameLength 的文件名</li>
+<li>32 位：offset，文件在数据段中的位置</li>
+<li>32 位：文件大小</li>
+</ul>
+<h2 id="Data"><a href="#Data" class="headerlink" title="Data"></a>Data</h2><p>所有的文件数据，上述 index 中的 offset 从中索引</p>
+<h1 id="解包"><a href="#解包" class="headerlink" title="解包"></a>解包</h1><h2 id="环境与工具"><a href="#环境与工具" class="headerlink" title="环境与工具"></a>环境与工具</h2><ol>
+<li>node</li>
+<li>前面提到的微信 unpacker</li>
+</ol>
+<h2 id="操作"><a href="#操作" class="headerlink" title="操作"></a>操作</h2><ol>
+<li><p>区分主包与子包<br>子包解包后得到的文件内容与主包差别较大，缺少几个主要文件：app-service.js、app.json、app-config.json 等，是关于整个包的配置。因此如果直接使用解主包的指令解子包，工具将报错（虽然目录下的内容仍然可以获得）。</p>
+</li>
+<li><p>解主包<br>{main_package.wxapkg} 直接执行下面指令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">node wuWxapkg.js main_package.wxapkg</span><br></pre></td></tr></table></figure></li>
+<li><p>解子包<br>{sub_package.wxapkg} 执行下面指令，其中 -s 用于指示主包的位置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">node wuWxapkg.js sub_package.wxapkg -s=main_package</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>解包后就可以得到源代码，解包后的文件结构及不同文件作用见<a target="_blank" rel="noopener" href="https://jwy630.github.io/2022/02/19/test/">前文</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2022/03/03/wechat-mini-program-unpack/" data-id="cl0avti9f0000x0wx2r2s7eon" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="tag">小程序</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-summary-flash-boy-2" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2022/02/24/summary-flash-boy-2/" class="article-date">
@@ -409,7 +478,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Android/" style="font-size: 15px;">Android</a> <a href="/tags/Android%E9%9A%90%E7%A7%81/" style="font-size: 10px;">Android隐私</a> <a href="/tags/BUG%E5%8F%8D%E6%80%9D/" style="font-size: 10px;">BUG反思</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/javascript/" style="font-size: 10px;">javascript</a> <a href="/tags/paperSummary/" style="font-size: 15px;">paperSummary</a> <a href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" style="font-size: 20px;">小程序</a>
+      <a href="/tags/Android/" style="font-size: 16.67px;">Android</a> <a href="/tags/Android%E9%9A%90%E7%A7%81/" style="font-size: 10px;">Android隐私</a> <a href="/tags/BUG%E5%8F%8D%E6%80%9D/" style="font-size: 10px;">BUG反思</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/javascript/" style="font-size: 10px;">javascript</a> <a href="/tags/paperSummary/" style="font-size: 13.33px;">paperSummary</a> <a href="/tags/%E5%B0%8F%E7%A8%8B%E5%BA%8F/" style="font-size: 20px;">小程序</a>
     </div>
   </div>
 
@@ -431,6 +500,10 @@
       <ul>
         
           <li>
+            <a href="/2022/05/29/ui2/">【知识】【python】【adb】uiautomator2 包文档</a>
+          </li>
+        
+          <li>
             <a href="/2022/05/21/JsBridge/">【知识】【安卓】JsBridge</a>
           </li>
         
@@ -444,10 +517,6 @@
         
           <li>
             <a href="/2022/04/22/unpackwxError/">【技术】【小程序】wxUnpacker 工具“SyntaxError： Illegal return statement” 错误</a>
-          </li>
-        
-          <li>
-            <a href="/2022/04/15/apinath/">【技术】【小程序】Apinat 工具原理解析</a>
           </li>
         
       </ul>
